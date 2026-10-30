@@ -1,0 +1,7 @@
+2026-10-30 20:37:24.969208+07:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "ledger_transactions" not found (this database is empty); SQL statement:
+SELECT sequence_num, id, idempotency_key, payload_hash, description,
+       status, posted_at, prev_hash, hash
+FROM ledger_transactions
+ORDER BY sequence_num ASC
+ [42104-224]

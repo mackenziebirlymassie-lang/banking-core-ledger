@@ -8,7 +8,7 @@ spring:
     virtual:
       enabled: true
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:core_ledger;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1}
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/core_ledger;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
@@ -20,9 +20,22 @@ spring:
 
 ledger:
   wal:
-    path: ${LEDGER_WAL_PATH:target/data/ledger.wal}
+    path: ${LEDGER_WAL_PATH:data/ledger.wal}
+  desktop:
+    auto-launch: ${LEDGER_AUTO_LAUNCH:true}
 
 logging:
   level:
     com.bank.ledger: INFO
     org.springframework.web: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ledger}
+    driver-class-name: org.postgresql.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}

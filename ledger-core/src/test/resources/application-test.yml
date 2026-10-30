@@ -7,3 +7,5 @@ spring:
 ledger:
   wal:
     path: target/test-data/ledger-api-test.wal
+  desktop:
+    auto-launch: false

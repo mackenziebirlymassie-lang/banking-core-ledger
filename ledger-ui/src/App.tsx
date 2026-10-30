@@ -10,7 +10,7 @@ import { AccountStatementModal } from './components/AccountStatementModal';
 import { AuditReportModal } from './components/AuditReportModal';
 import { CreateAccountModal } from './components/CreateAccountModal';
 import type { Account, AuditReport, Transaction } from './types/ledger';
-import { LedgerApi, globalStream } from './services/api';
+import { ledgerClient, type EngineMode } from './api/LedgerClient';
 import type { StreamConnectionStatus } from './services/api';
 import { Zap, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 
@@ -20,6 +20,7 @@ export const App: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<StreamConnectionStatus>('CONNECTING');
+  const [engineMode, setEngineMode] = useState<EngineMode>('EMBEDDED_KERNEL');
 
   // Modals state
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -38,8 +39,8 @@ export const App: React.FC = () => {
   const refreshAll = useCallback(async () => {
     try {
       const [accs, txs] = await Promise.all([
-        LedgerApi.getAccounts(),
-        LedgerApi.getTransactions(500, 0),
+        ledgerClient.getAccounts(),
+        ledgerClient.getTransactions(500, 0),
       ]);
       setAccounts(accs);
       setTransactions(txs);
@@ -47,38 +48,41 @@ export const App: React.FC = () => {
         setSelectedTransaction(txs[0]);
       }
     } catch (err: any) {
-      console.error('Initial data load error:', err);
+      console.error('Data load error:', err);
     }
   }, [selectedTransaction]);
 
   useEffect(() => {
-    refreshAll();
+    // Detect mode and load
+    ledgerClient.autoDetectMode().then(detected => {
+      setEngineMode(detected);
+      refreshAll();
+      ledgerClient.verifyAuditChain()
+        .then(report => setLastAuditReport(report))
+        .catch(e => console.warn('Audit boot check:', e));
+    });
 
-    // Verify chain on boot
-    LedgerApi.verifyAuditChain()
-      .then(report => setLastAuditReport(report))
-      .catch(e => console.warn('Audit boot check:', e));
+    const unsubMode = ledgerClient.onModeChange(m => {
+      setEngineMode(m);
+      refreshAll();
+    });
 
-    // Connect SSE Telemetry Stream
-    globalStream.connect();
-    const unsubStatus = globalStream.onStatusChange(status => setConnectionStatus(status));
+    const unsubStatus = ledgerClient.onStatusChange(status => {
+      setConnectionStatus(status);
+    });
 
-    const unsubEvent = globalStream.onEvent(event => {
+    const unsubEvent = ledgerClient.onEvent(event => {
       if (event.transaction) {
         const tx = event.transaction;
         setTransactions(prev => {
-          // If transaction already exists (e.g. settled or voided hold), update it in place
           const index = prev.findIndex(item => item.id === tx.id);
           if (index >= 0) {
             const updated = [...prev];
             updated[index] = tx;
             return updated;
           }
-          // Prepend new transaction to front
           return [tx, ...prev];
         });
-
-        // Also update selected transaction if active
         setSelectedTransaction(current => current && current.id === tx.id ? tx : current);
       }
 
@@ -91,23 +95,22 @@ export const App: React.FC = () => {
           return Array.from(map.values());
         });
       } else if (event.eventType === 'BURST_COMPLETED') {
-        // Burst updates dozens of accounts: re-fetch chart of accounts
-        LedgerApi.getAccounts().then(accs => setAccounts(accs));
-        LedgerApi.getTransactions(1000, 0).then(txs => setTransactions(txs));
+        ledgerClient.getAccounts().then(accs => setAccounts(accs));
+        ledgerClient.getTransactions(1000, 0).then(txs => setTransactions(txs));
       }
     });
 
     return () => {
+      unsubMode();
       unsubStatus();
       unsubEvent();
-      globalStream.disconnect();
     };
-  }, []);
+  }, [refreshAll]);
 
   const handleVerifyAudit = async () => {
     setIsVerifyingAudit(true);
     try {
-      const report = await LedgerApi.verifyAuditChain();
+      const report = await ledgerClient.verifyAuditChain();
       setLastAuditReport(report);
       setIsAuditModalOpen(true);
     } catch (err: any) {
@@ -124,18 +127,17 @@ export const App: React.FC = () => {
   const handleRunBurst = async (count: number) => {
     setIsBurstRunning(true);
     try {
-      const result = await LedgerApi.triggerBurst({
+      const result = await ledgerClient.triggerBurst({
         burstSize: count,
         amountPerTransferMinor: 1000, // $10.00
       });
 
       setToastMessage({
         title: `Stress Burst Completed: ${result.successfulTransfers} Transfers`,
-        detail: `${result.effectiveThroughputTps.toFixed(1)} TPS across Virtual Threads in ${result.elapsedMilliseconds}ms (${result.totalAmountTransferredFormatted})`,
+        detail: `${result.effectiveThroughputTps.toFixed(1)} TPS in ${result.elapsedMilliseconds}ms (${result.totalAmountTransferredFormatted})`,
         type: 'burst',
       });
 
-      // Refresh accounts and transaction stream
       await refreshAll();
     } catch (err: any) {
       setToastMessage({
@@ -150,10 +152,10 @@ export const App: React.FC = () => {
 
   const handleSettleHold = async (txId: string) => {
     try {
-      const settled = await LedgerApi.settleHold(txId, crypto.randomUUID());
+      const settled = await ledgerClient.settleHold(txId, crypto.randomUUID());
       setTransactions(prev => prev.map(t => t.id === txId ? settled : t));
       setSelectedTransaction(settled);
-      const accs = await LedgerApi.getAccounts();
+      const accs = await ledgerClient.getAccounts();
       setAccounts(accs);
       setToastMessage({
         title: 'Hold Settled Successfully',
@@ -171,10 +173,10 @@ export const App: React.FC = () => {
 
   const handleVoidHold = async (txId: string) => {
     try {
-      const voided = await LedgerApi.voidHold(txId, crypto.randomUUID());
+      const voided = await ledgerClient.voidHold(txId, crypto.randomUUID());
       setTransactions(prev => prev.map(t => t.id === txId ? voided : t));
       setSelectedTransaction(voided);
-      const accs = await LedgerApi.getAccounts();
+      const accs = await ledgerClient.getAccounts();
       setAccounts(accs);
       setToastMessage({
         title: 'Hold Voided Successfully',
@@ -225,6 +227,17 @@ export const App: React.FC = () => {
         connectionStatus={connectionStatus}
         latestTxHash={latestHash}
         totalTransactions={transactions.length}
+        engineMode={engineMode}
+        onToggleEngineMode={() => ledgerClient.toggleMode()}
+        onResetState={() => {
+          ledgerClient.resetStandaloneState();
+          refreshAll();
+          setToastMessage({
+            title: 'State Reset Complete',
+            detail: 'Embedded ledger reset to original institutional seed state.',
+            type: 'success',
+          });
+        }}
         onVerifyAudit={handleVerifyAudit}
         onRunBurst={handleRunBurst}
         onOpenTransferModal={() => setIsTransferModalOpen(true)}

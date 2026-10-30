@@ -128,7 +128,7 @@ export interface BurstSimulationResponse {
 }
 
 export interface StreamEvent {
-  eventType: 'TRANSACTION_POSTED' | 'HOLD_AUTHORIZED' | 'HOLD_SETTLED' | 'HOLD_VOIDED' | 'BURST_COMPLETED' | 'PING';
+  eventType: 'TRANSACTION_POSTED' | 'HOLD_AUTHORIZED' | 'HOLD_SETTLED' | 'HOLD_VOIDED' | 'BURST_COMPLETED' | 'BALANCE_UPDATED' | 'PING';
   transaction?: Transaction;
   updatedAccounts?: Account[];
   timestamp: string;

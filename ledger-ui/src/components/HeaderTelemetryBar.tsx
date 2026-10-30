@@ -6,17 +6,23 @@ import {
   CheckCircle2,
   RefreshCw,
   PlusCircle,
-  Database
+  Database,
+  Cpu,
+  RotateCcw
 } from 'lucide-react';
 import type { Account, AuditReport } from '../types/ledger';
 import { formatMinor } from '../utils/money';
 import type { StreamConnectionStatus } from '../services/api';
+import type { EngineMode } from '../api/LedgerClient';
 
 interface HeaderTelemetryBarProps {
   accounts: Account[];
   connectionStatus: StreamConnectionStatus;
   latestTxHash: string;
   totalTransactions: number;
+  engineMode: EngineMode;
+  onToggleEngineMode: () => void;
+  onResetState?: () => void;
   onVerifyAudit: () => void;
   onRunBurst: (count: number) => void;
   onOpenTransferModal: () => void;
@@ -31,6 +37,9 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
   connectionStatus,
   latestTxHash,
   totalTransactions,
+  engineMode,
+  onToggleEngineMode,
+  onResetState,
   onVerifyAudit,
   onRunBurst,
   onOpenTransferModal,
@@ -42,7 +51,6 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
   const burstCount = 500;
 
   // Calculate Global Double-Entry Invariant across all accounts
-  // In a balanced ledger, Sum(All Posted Debits) == Sum(All Posted Credits)
   let totalDebits = 0n;
   let totalCredits = 0n;
   for (const acc of accounts) {
@@ -51,6 +59,8 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
   }
   const discrepancy = totalDebits - totalCredits;
   const isGlobalBalanced = discrepancy === 0n;
+
+  const isJava = engineMode === 'JAVA_21_BACKEND';
 
   return (
     <header style={{
@@ -61,12 +71,12 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: '0 16px',
-      gap: '16px',
+      gap: '12px',
       flexShrink: 0,
       zIndex: 10,
     }}>
       {/* Brand & Connection Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
             width: '28px',
@@ -106,18 +116,43 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           </div>
         </div>
 
+        {/* Engine Mode Pill & Toggle */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '3px 8px',
+          background: isJava ? 'rgba(56, 189, 248, 0.1)' : 'rgba(168, 85, 247, 0.1)',
+          border: `1px solid ${isJava ? 'rgba(56, 189, 248, 0.3)' : 'rgba(168, 85, 247, 0.3)'}`,
+          borderRadius: '4px',
+          fontSize: '11px',
+          fontFamily: 'var(--font-mono)',
+          cursor: 'pointer',
+        }}
+        onClick={onToggleEngineMode}
+        title="Click to toggle between Java 21 Backend and Standalone Embedded Kernel"
+        >
+          <Cpu size={13} style={{ color: isJava ? '#38bdf8' : '#c084fc' }} />
+          <span style={{ color: isJava ? '#7dd3fc' : '#e9d5ff', fontWeight: 600 }}>
+            {isJava ? 'ENGINE: JAVA 21 + WAL (CONNECTED)' : 'ENGINE: STANDALONE KERNEL (LOCAL)'}
+          </span>
+          <span style={{ fontSize: '9px', color: 'var(--text-dim)', marginLeft: '4px' }}>
+            [SWITCH]
+          </span>
+        </div>
+
         {/* Live SSE Stream Indicator */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          padding: '4px 8px',
+          padding: '3px 8px',
           background: 'var(--bg-app)',
           border: '1px solid var(--border-subtle)',
           borderRadius: '4px',
           fontSize: '11px',
           fontFamily: 'var(--font-mono)'
-        }} title={`SSE Telemetry Stream: ${connectionStatus}`}>
+        }} title={`Telemetry Stream: ${connectionStatus}`}>
           <div className={`pulse-dot ${connectionStatus.toLowerCase()}`} />
           <span style={{ color: connectionStatus === 'CONNECTED' ? '#34d399' : '#fb7185', fontWeight: 600 }}>
             {connectionStatus}
@@ -126,7 +161,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
       </div>
 
       {/* Global Invariant & Cryptographic Chain Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         {/* Invariant Status: Sum(Debits) == Sum(Credits) */}
         <div style={{
           display: 'flex',
@@ -217,15 +252,27 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
 
       {/* Action Controls: Stress Burst & New Transfer */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {!isJava && onResetState && (
+          <button
+            className="btn btn-secondary"
+            onClick={onResetState}
+            style={{ height: '32px', color: '#f59e0b' }}
+            title="Reset standalone localStorage state back to institutional seed"
+          >
+            <RotateCcw size={12} />
+            Reset State
+          </button>
+        )}
+
         <button
           className="btn btn-burst"
           onClick={() => onRunBurst(burstCount)}
           disabled={isBurstRunning}
           style={{ height: '32px' }}
-          title="Spawn 500 Virtual Thread transfers concurrently on backend"
+          title="Spawn 500 concurrent transfers"
         >
           <Zap size={13} />
-          {isBurstRunning ? 'Executing 500-Tx Burst...' : 'Run 500-Tx Stress Burst'}
+          {isBurstRunning ? 'Running 500-Tx Burst...' : 'Run 500-Tx Stress Burst'}
         </button>
 
         <button

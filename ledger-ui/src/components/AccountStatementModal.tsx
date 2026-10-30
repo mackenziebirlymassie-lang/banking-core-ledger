@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import type { Account, AccountStatement } from '../types/ledger';
 import { formatMinor } from '../utils/money';
-import { LedgerApi } from '../services/api';
+import { ledgerClient } from '../api/LedgerClient';
 
 interface AccountStatementModalProps {
   account: Account | null;
@@ -40,7 +40,7 @@ export const AccountStatementModal: React.FC<AccountStatementModalProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      const data = await LedgerApi.getAccountStatement(accId, pageNum, pageSize);
+      const data = await ledgerClient.getAccountStatement(accId, pageNum, pageSize);
       setStatement(data);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch statement');

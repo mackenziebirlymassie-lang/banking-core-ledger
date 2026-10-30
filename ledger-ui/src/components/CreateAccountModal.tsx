@@ -6,7 +6,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import type { Account, AccountType } from '../types/ledger';
-import { LedgerApi } from '../services/api';
+import { ledgerClient } from '../api/LedgerClient';
 
 interface CreateAccountModalProps {
   isOpen: boolean;
@@ -39,7 +39,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     setError(null);
 
     try {
-      const created = await LedgerApi.createAccount({
+      const created = await ledgerClient.createAccount({
         accountNumber: accountNumber.trim().toUpperCase(),
         currency: currency.trim().toUpperCase(),
         type,

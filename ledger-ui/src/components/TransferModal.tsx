@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import type { Account, Direction, PostingLegPayload, Transaction } from '../types/ledger';
 import { calculateLegsBalance, formatMinor, parseToMinor } from '../utils/money';
-import { LedgerApi } from '../services/api';
+import { ledgerClient } from '../api/LedgerClient';
 
 interface TransferModalProps {
   accounts: Account[];
@@ -101,7 +101,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           throw new Error('Source and destination accounts must be distinct');
         }
 
-        const res = await LedgerApi.executeTransfer({
+        const res = await ledgerClient.executeTransfer({
           sourceAccountId,
           destinationAccountId: destAccountId,
           amountMinor,
@@ -119,7 +119,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           throw new Error('Source and escrow/destination accounts must be distinct');
         }
 
-        const res = await LedgerApi.authorizeHold({
+        const res = await ledgerClient.authorizeHold({
           sourceAccountId,
           destinationAccountId: destAccountId,
           amountMinor,
@@ -139,7 +139,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           direction: l.direction,
         }));
 
-        const res = await LedgerApi.executeTransfer({
+        const res = await ledgerClient.executeTransfer({
           legs: legPayloads,
           description,
         }, idempotencyKey);

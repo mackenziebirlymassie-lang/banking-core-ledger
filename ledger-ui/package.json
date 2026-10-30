@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:single": "tsc -b && vite build --config vite.config.singlefile.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -22,6 +23,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.89.0",
     "typescript": "~7.0.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vite-plugin-singlefile": "^2.3.4"
   }
 }

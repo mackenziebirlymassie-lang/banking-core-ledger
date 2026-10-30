@@ -47,6 +47,16 @@ public class DatabaseInitializer implements ApplicationRunner {
 
             if (exists) {
                 log.info("[DatabaseInitializer] Database schema already present for {}", dbProduct);
+                if (dbProduct.contains("h2")) {
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.execute("DROP TRIGGER IF EXISTS trg_postings_immutable");
+                        stmt.execute("CREATE TRIGGER trg_postings_immutable BEFORE UPDATE OR DELETE ON postings FOR EACH ROW CALL \"com.bank.ledger.repository.h2.H2PostingsImmutabilityTrigger\"");
+                        stmt.execute("DROP TRIGGER IF EXISTS trg_postings_balance");
+                        stmt.execute("CREATE TRIGGER trg_postings_balance AFTER INSERT ON postings FOR EACH ROW CALL \"com.bank.ledger.repository.h2.H2PostingsBalanceTrigger\"");
+                    } catch (Exception ex) {
+                        log.debug("Trigger refresh notice: {}", ex.getMessage());
+                    }
+                }
                 return;
             }
 

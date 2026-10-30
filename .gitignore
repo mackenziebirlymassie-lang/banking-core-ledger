@@ -13,6 +13,7 @@ build/
 target/
 *.class
 *.jar
+!release/*.jar
 *.war
 
 # Environment variables & secrets
