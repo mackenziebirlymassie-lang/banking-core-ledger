@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing & Coverage
+coverage/
+*.lcov
+
+# Production Builds
+dist/
+build/
+target/
+*.class
+*.jar
+*.war
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+
+# IDEs & OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
