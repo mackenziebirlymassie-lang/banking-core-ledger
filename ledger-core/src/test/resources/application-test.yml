@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:ledger_api_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+ledger:
+  wal:
+    path: target/test-data/ledger-api-test.wal

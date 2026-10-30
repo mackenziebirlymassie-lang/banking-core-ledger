@@ -36,6 +36,17 @@ public class LedgerTransactionRepository {
         String payloadHash
     ) {}
 
+    public record StatementEntry(
+        UUID postingId,
+        UUID transactionId,
+        long sequenceNum,
+        String description,
+        Instant postedAt,
+        Direction direction,
+        long amount,
+        int sequenceIndex
+    ) {}
+
     public void insertTransaction(
         LedgerTransaction tx,
         String prevHash,
@@ -98,6 +109,51 @@ public class LedgerTransactionRepository {
         String sql = "SELECT * FROM ledger_transactions WHERE idempotency_key = :key";
         List<TransactionRecord> results = jdbcTemplate.query(sql, Map.of("key", key), this::mapTransactionRecord);
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
+
+    public List<TransactionRecord> findTransactions(int limit, long afterSequence) {
+        String sql = """
+            SELECT * FROM ledger_transactions
+            WHERE sequence_num > :afterSequence
+            ORDER BY sequence_num ASC
+            LIMIT :limit
+            """;
+        return jdbcTemplate.query(sql, Map.of(
+            "afterSequence", afterSequence,
+            "limit", Math.max(1, Math.min(limit, 500))
+        ), this::mapTransactionRecord);
+    }
+
+    public List<StatementEntry> findStatementEntries(UUID accountId, int limit, int offset) {
+        String sql = """
+            SELECT p.id as posting_id, p.transaction_id, p.amount, p.direction, p.sequence_index,
+                   t.sequence_num, t.description, t.posted_at
+            FROM postings p
+            JOIN ledger_transactions t ON p.transaction_id = t.id
+            WHERE p.account_id = :accountId
+            ORDER BY t.sequence_num ASC, p.sequence_index ASC
+            LIMIT :limit OFFSET :offset
+            """;
+        return jdbcTemplate.query(sql, Map.of(
+            "accountId", accountId,
+            "limit", Math.max(1, Math.min(limit, 500)),
+            "offset", Math.max(0, offset)
+        ), (rs, rowNum) -> new StatementEntry(
+            UUID.fromString(rs.getString("posting_id")),
+            UUID.fromString(rs.getString("transaction_id")),
+            rs.getLong("sequence_num"),
+            rs.getString("description"),
+            rs.getTimestamp("posted_at").toInstant().truncatedTo(ChronoUnit.MILLIS),
+            Direction.valueOf(rs.getString("direction")),
+            rs.getLong("amount"),
+            rs.getInt("sequence_index")
+        ));
+    }
+
+    public long countStatementEntries(UUID accountId) {
+        String sql = "SELECT COUNT(*) FROM postings WHERE account_id = :accountId";
+        Long val = jdbcTemplate.queryForObject(sql, Map.of("accountId", accountId), Long.class);
+        return val != null ? val : 0L;
     }
 
     public Optional<TransactionRecord> findLatestTransaction() {

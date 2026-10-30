@@ -140,7 +140,19 @@ public class AuditVerifierService {
                         storedPrevHash, txId, idempotencyKey, status, postedAt, recomputedPayloadHash
                     );
 
-                    if (!recomputedTxHash.equalsIgnoreCase(storedHash)) {
+                    boolean hashMatches = recomputedTxHash.equalsIgnoreCase(storedHash);
+                    if (!hashMatches && (status == TransferStatus.POSTED || status == TransferStatus.VOIDED)) {
+                        // Check if transaction was originally authorized as a PENDING hold
+                        String pendingHash = HashChainService.computeTransactionHash(
+                            storedPrevHash, txId, idempotencyKey, TransferStatus.PENDING, postedAt, recomputedPayloadHash
+                        );
+                        if (pendingHash.equalsIgnoreCase(storedHash)) {
+                            hashMatches = true;
+                            recomputedTxHash = pendingHash;
+                        }
+                    }
+
+                    if (!hashMatches) {
                         return AuditVerificationReport.failure(
                             scannedCount, seq, txId,
                             String.format("Transaction hash mismatch at sequence %d (txId: %s): stored %s != recomputed %s",

@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: core-banking-ledger
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:core_ledger;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    hikari:
+      maximum-pool-size: 25
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 10000
+
+ledger:
+  wal:
+    path: ${LEDGER_WAL_PATH:target/data/ledger.wal}
+
+logging:
+  level:
+    com.bank.ledger: INFO
+    org.springframework.web: INFO

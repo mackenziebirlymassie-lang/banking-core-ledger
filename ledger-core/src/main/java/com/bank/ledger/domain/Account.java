@@ -124,6 +124,13 @@ public final class Account {
     }
 
     /**
+     * Active held pending balance.
+     */
+    public long getPendingBalance() {
+        return type.isDebitNormal() ? pendingCredits.get() : pendingDebits.get();
+    }
+
+    /**
      * Available balance taking into account active PENDING holds.
      * Outflows held in PENDING reduce available funds.
      */

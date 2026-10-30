@@ -59,6 +59,23 @@ public class AccountRepository {
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
 
+    public Optional<Account> findByAccountNumber(String accountNumber) {
+        String sql = "SELECT * FROM accounts WHERE account_number = :accountNumber";
+        List<Account> results = jdbcTemplate.query(sql, Map.of("accountNumber", accountNumber), new AccountRowMapper());
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
+
+    public List<Account> findAll() {
+        String sql = "SELECT * FROM accounts ORDER BY account_number ASC";
+        return jdbcTemplate.query(sql, new AccountRowMapper());
+    }
+
+    public long count() {
+        String sql = "SELECT COUNT(*) FROM accounts";
+        Long val = jdbcTemplate.getJdbcTemplate().queryForObject(sql, Long.class);
+        return val != null ? val : 0L;
+    }
+
     /**
      * Acquires pessimistic row-level locks on accounts in strictly ascending natural UUID order.
      * Guaranteed to prevent deadlocks across distributed database sessions.

@@ -40,6 +40,14 @@ public class PostgresLedgerEngine {
     private final LedgerTransactionRepository transactionRepository;
     private final BinaryWalWriter walWriter;
     private final TransactionTemplate transactionTemplate;
+    private volatile LedgerEventListener eventListener;
+
+    @FunctionalInterface
+    public interface LedgerEventListener {
+        void onTransactionCommitted(LedgerTransaction tx, List<Account> affectedAccounts);
+    }
+
+    public record ExecutionResult<T>(T result, boolean isReplay) {}
 
     public PostgresLedgerEngine(
         AccountRepository accountRepository,
@@ -51,6 +59,10 @@ public class PostgresLedgerEngine {
         this.transactionRepository = Objects.requireNonNull(transactionRepository, "transactionRepository must not be null");
         this.walWriter = walWriter; // Optional local WAL writer
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
+
+    public void setEventListener(LedgerEventListener eventListener) {
+        this.eventListener = eventListener;
     }
 
     public Account createAccount(
@@ -88,13 +100,23 @@ public class PostgresLedgerEngine {
         UUID destinationAccountId,
         long amount
     ) {
+        return transferWithResult(idempotencyKey, description, sourceAccountId, destinationAccountId, amount).result();
+    }
+
+    public ExecutionResult<LedgerTransaction> transferWithResult(
+        String idempotencyKey,
+        String description,
+        UUID sourceAccountId,
+        UUID destinationAccountId,
+        long amount
+    ) {
         UUID txId = UUID.randomUUID();
         List<Posting> postings = List.of(
             new Posting(UUID.randomUUID(), txId, sourceAccountId, amount, Direction.CREDIT, 0),
             new Posting(UUID.randomUUID(), txId, destinationAccountId, amount, Direction.DEBIT, 1)
         );
 
-        return postTransaction(idempotencyKey, description, postings, txId);
+        return postTransactionWithResult(idempotencyKey, description, postings, txId);
     }
 
     /**
@@ -114,6 +136,15 @@ public class PostgresLedgerEngine {
         List<Posting> postings,
         UUID transactionId
     ) {
+        return postTransactionWithResult(idempotencyKey, description, postings, transactionId).result();
+    }
+
+    public ExecutionResult<LedgerTransaction> postTransactionWithResult(
+        String idempotencyKey,
+        String description,
+        List<Posting> postings,
+        UUID transactionId
+    ) {
         return transactionTemplate.execute(status -> {
             // 1. Idempotency Check
             Optional<LedgerTransactionRepository.TransactionRecord> existing =
@@ -122,7 +153,7 @@ public class PostgresLedgerEngine {
             if (existing.isPresent()) {
                 LedgerTransaction existingTx = existing.get().transaction();
                 verifyIdempotencyMatch(existingTx, description, postings);
-                return existingTx;
+                return new ExecutionResult<>(existingTx, true);
             }
 
             // 2. Deterministic Row-Locking: Lock all involved accounts in ascending natural UUID order
@@ -198,7 +229,11 @@ public class PostgresLedgerEngine {
                 }
             }
 
-            return tx;
+            if (eventListener != null) {
+                eventListener.onTransactionCommitted(tx, new java.util.ArrayList<>(accountMap.values()));
+            }
+
+            return new ExecutionResult<>(tx, false);
         });
     }
 
@@ -212,20 +247,29 @@ public class PostgresLedgerEngine {
         UUID destinationAccountId,
         long amount
     ) {
-        UUID txId = UUID.randomUUID();
-        List<Posting> postings = List.of(
-            new Posting(UUID.randomUUID(), txId, sourceAccountId, amount, Direction.CREDIT, 0),
-            new Posting(UUID.randomUUID(), txId, destinationAccountId, amount, Direction.DEBIT, 1)
-        );
+        return authorizeHoldWithResult(idempotencyKey, description, sourceAccountId, destinationAccountId, amount).result();
+    }
 
+    public ExecutionResult<LedgerTransaction> authorizeHoldWithResult(
+        String idempotencyKey,
+        String description,
+        UUID sourceAccountId,
+        UUID destinationAccountId,
+        long amount
+    ) {
         return transactionTemplate.execute(status -> {
             Optional<LedgerTransactionRepository.TransactionRecord> existing =
                 transactionRepository.findByIdempotencyKey(idempotencyKey);
 
             if (existing.isPresent()) {
                 LedgerTransaction existingTx = existing.get().transaction();
-                verifyIdempotencyMatch(existingTx, description, postings);
-                return existingTx;
+                if (!existingTx.description().equals(description)) {
+                    throw new IdempotencyConflictException(
+                        existingTx.idempotencyKey(),
+                        String.format("Description mismatch: expected '%s', got '%s'", existingTx.description(), description)
+                    );
+                }
+                return new ExecutionResult<>(existingTx, true);
             }
 
             List<UUID> accountIds = List.of(sourceAccountId, destinationAccountId).stream()
@@ -234,6 +278,24 @@ public class PostgresLedgerEngine {
             List<Account> lockedAccounts = accountRepository.lockAccountsForUpdate(accountIds);
             Map<UUID, Account> accountMap = lockedAccounts.stream()
                 .collect(Collectors.toMap(Account::getId, Function.identity()));
+
+            if (accountMap.size() != accountIds.size()) {
+                for (UUID id : accountIds) {
+                    if (!accountMap.containsKey(id)) {
+                        throw new AccountNotFoundException(id);
+                    }
+                }
+            }
+
+            Account sourceAcc = accountMap.get(sourceAccountId);
+            Direction sourceDir = sourceAcc.getType().isDebitNormal() ? Direction.CREDIT : Direction.DEBIT;
+            Direction destDir = (sourceDir == Direction.CREDIT) ? Direction.DEBIT : Direction.CREDIT;
+
+            UUID txId = UUID.randomUUID();
+            List<Posting> postings = List.of(
+                new Posting(UUID.randomUUID(), txId, sourceAccountId, amount, sourceDir, 0),
+                new Posting(UUID.randomUUID(), txId, destinationAccountId, amount, destDir, 1)
+            );
 
             LedgerValidator.validateTransactionStructure(postings, accountMap);
             for (Posting p : postings) {
@@ -274,7 +336,11 @@ public class PostgresLedgerEngine {
                 }
             }
 
-            return holdTx;
+            if (eventListener != null) {
+                eventListener.onTransactionCommitted(holdTx, new java.util.ArrayList<>(accountMap.values()));
+            }
+
+            return new ExecutionResult<>(holdTx, false);
         });
     }
 
@@ -282,11 +348,18 @@ public class PostgresLedgerEngine {
      * Settles a pending hold, moving funds from pending to posted atomically.
      */
     public LedgerTransaction settleHold(UUID holdTransactionId) {
+        return settleHoldWithResult(holdTransactionId).result();
+    }
+
+    public ExecutionResult<LedgerTransaction> settleHoldWithResult(UUID holdTransactionId) {
         return transactionTemplate.execute(status -> {
             LedgerTransactionRepository.TransactionRecord record = transactionRepository.findById(holdTransactionId)
                 .orElseThrow(() -> new LedgerException("Hold transaction not found: " + holdTransactionId));
 
             LedgerTransaction holdTx = record.transaction();
+            if (holdTx.status() == TransferStatus.POSTED) {
+                return new ExecutionResult<>(holdTx, true);
+            }
             if (holdTx.status() != TransferStatus.PENDING) {
                 throw new LedgerException("Transaction " + holdTransactionId + " is not in PENDING status: " + holdTx.status());
             }
@@ -304,10 +377,10 @@ public class PostgresLedgerEngine {
                 accountRepository.updateBalances(acc, expectedVer);
             }
 
-            String settledHash = HashChainService.sha256Hex(holdTx.hash() + ":SETTLED");
+            String settledHash = holdTx.hash();
             transactionRepository.updateTransactionStatus(holdTransactionId, TransferStatus.POSTED, settledHash);
 
-            return new LedgerTransaction(
+            LedgerTransaction settledTx = new LedgerTransaction(
                 holdTx.id(),
                 holdTx.idempotencyKey(),
                 holdTx.description() + " [SETTLED]",
@@ -316,6 +389,12 @@ public class PostgresLedgerEngine {
                 holdTx.postings(),
                 settledHash
             );
+
+            if (eventListener != null) {
+                eventListener.onTransactionCommitted(settledTx, new java.util.ArrayList<>(map.values()));
+            }
+
+            return new ExecutionResult<>(settledTx, false);
         });
     }
 
@@ -323,11 +402,18 @@ public class PostgresLedgerEngine {
      * Voids an active hold, releasing reserved funds back to available balance.
      */
     public LedgerTransaction voidHold(UUID holdTransactionId) {
+        return voidHoldWithResult(holdTransactionId).result();
+    }
+
+    public ExecutionResult<LedgerTransaction> voidHoldWithResult(UUID holdTransactionId) {
         return transactionTemplate.execute(status -> {
             LedgerTransactionRepository.TransactionRecord record = transactionRepository.findById(holdTransactionId)
                 .orElseThrow(() -> new LedgerException("Hold transaction not found: " + holdTransactionId));
 
             LedgerTransaction holdTx = record.transaction();
+            if (holdTx.status() == TransferStatus.VOIDED) {
+                return new ExecutionResult<>(holdTx, true);
+            }
             if (holdTx.status() != TransferStatus.PENDING) {
                 throw new LedgerException("Transaction " + holdTransactionId + " is not in PENDING status: " + holdTx.status());
             }
@@ -345,10 +431,10 @@ public class PostgresLedgerEngine {
                 accountRepository.updateBalances(acc, expectedVer);
             }
 
-            String voidedHash = HashChainService.sha256Hex(holdTx.hash() + ":VOIDED");
+            String voidedHash = holdTx.hash();
             transactionRepository.updateTransactionStatus(holdTransactionId, TransferStatus.VOIDED, voidedHash);
 
-            return new LedgerTransaction(
+            LedgerTransaction voidedTx = new LedgerTransaction(
                 holdTx.id(),
                 holdTx.idempotencyKey(),
                 holdTx.description() + " [VOIDED]",
@@ -357,6 +443,12 @@ public class PostgresLedgerEngine {
                 holdTx.postings(),
                 voidedHash
             );
+
+            if (eventListener != null) {
+                eventListener.onTransactionCommitted(voidedTx, new java.util.ArrayList<>(map.values()));
+            }
+
+            return new ExecutionResult<>(voidedTx, false);
         });
     }
 

@@ -33,4 +33,8 @@ public class InsufficientFundsException extends LedgerException {
     public long getRequiredAmount() {
         return requiredAmount;
     }
+
+    public long getAttemptedAmount() {
+        return requiredAmount;
+    }
 }
