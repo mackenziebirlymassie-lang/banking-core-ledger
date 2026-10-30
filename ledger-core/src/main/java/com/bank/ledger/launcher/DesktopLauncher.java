@@ -43,30 +43,26 @@ public class DesktopLauncher {
 
                 String os = System.getProperty("os.name", "").toLowerCase();
                 if (os.contains("win")) {
-                    try {
-                        Process process = new ProcessBuilder(
-                            "cmd", "/c", "start", "msedge",
-                            "--app=" + targetUrl,
-                            "--window-size=1440,900"
-                        ).start();
-                        if (process.waitFor() == 0) {
-                            return;
-                        }
-                    } catch (Exception ex) {
-                        log.debug("Edge app mode launch attempt: {}", ex.getMessage());
-                    }
+                    String localAppData = System.getenv("LOCALAPPDATA");
+                    String[] browserCandidates = {
+                        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+                        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+                        localAppData != null ? localAppData + "\\Google\\Chrome\\Application\\chrome.exe" : null,
+                        "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+                        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+                        "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+                        localAppData != null ? localAppData + "\\imput\\Helium\\Application\\chrome.exe" : null
+                    };
 
-                    try {
-                        Process process = new ProcessBuilder(
-                            "cmd", "/c", "start", "chrome",
-                            "--app=" + targetUrl,
-                            "--window-size=1440,900"
-                        ).start();
-                        if (process.waitFor() == 0) {
-                            return;
+                    for (String candidate : browserCandidates) {
+                        if (candidate != null && new java.io.File(candidate).exists()) {
+                            try {
+                                new ProcessBuilder(candidate, "--app=" + targetUrl, "--window-size=1440,900").start();
+                                return;
+                            } catch (Exception ex) {
+                                log.debug("Browser app launch attempt failed for {}: {}", candidate, ex.getMessage());
+                            }
                         }
-                    } catch (Exception ex) {
-                        log.debug("Chrome app mode launch attempt: {}", ex.getMessage());
                     }
                 }
 

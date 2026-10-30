@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace CoreBankingLedger
 {
@@ -146,7 +148,7 @@ namespace CoreBankingLedger
                 }
             }
 
-            // 3. Open single dedicated native app window
+            // 3. Open single dedicated native app window (or default browser)
             LaunchBrowserApp(targetUrl);
         }
 
@@ -209,37 +211,27 @@ namespace CoreBankingLedger
 
         static void LaunchBrowserApp(string targetUrl)
         {
-            // Try Edge App Mode (Chromeless window)
-            try
+            // 1. Probe for installed Chromium browser for native chromeless app window
+            string browserExe = FindChromiumBrowser();
+            if (!string.IsNullOrEmpty(browserExe))
             {
-                Process p = Process.Start(new ProcessStartInfo
+                try
                 {
-                    FileName = "cmd.exe",
-                    Arguments = "/c start msedge --app=" + targetUrl + " --window-size=1440,900",
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                });
-                p.WaitForExit(3000);
-                return;
-            }
-            catch {}
-
-            // Try Chrome App Mode
-            try
-            {
-                Process p = Process.Start(new ProcessStartInfo
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = browserExe,
+                        Arguments = "--app=" + targetUrl + " --window-size=1440,900",
+                        UseShellExecute = false
+                    });
+                    return;
+                }
+                catch
                 {
-                    FileName = "cmd.exe",
-                    Arguments = "/c start chrome --app=" + targetUrl + " --window-size=1440,900",
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                });
-                p.WaitForExit(3000);
-                return;
+                    // If launching app-mode fails, continue to fallback
+                }
             }
-            catch {}
 
-            // Fallback default system browser
+            // 2. Safe Fallback: Open URL directly in default system browser
             try
             {
                 Process.Start(new ProcessStartInfo
@@ -248,7 +240,109 @@ namespace CoreBankingLedger
                     UseShellExecute = true
                 });
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Ledger backend is ready at: " + targetUrl + "\n\nCould not launch browser automatically: " + ex.Message,
+                    "Core Banking Ledger",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+        }
+
+        static string FindChromiumBrowser()
+        {
+            List<string> candidates = new List<string>();
+
+            // Query Windows Registry App Paths (most accurate registration)
+            string[] browserNames = new string[] { "chrome.exe", "msedge.exe", "brave.exe" };
+            foreach (string name in browserNames)
+            {
+                string regPath = ReadAppPathRegistry(name);
+                if (!string.IsNullOrEmpty(regPath))
+                {
+                    candidates.Add(regPath);
+                }
+            }
+
+            // Standard filesystem locations
+            string progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string progFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+            if (!string.IsNullOrEmpty(progFiles))
+            {
+                candidates.Add(Path.Combine(progFiles, @"Google\Chrome\Application\chrome.exe"));
+                candidates.Add(Path.Combine(progFiles, @"Microsoft\Edge\Application\msedge.exe"));
+                candidates.Add(Path.Combine(progFiles, @"BraveSoftware\Brave-Browser\Application\brave.exe"));
+            }
+
+            if (!string.IsNullOrEmpty(progFilesX86))
+            {
+                candidates.Add(Path.Combine(progFilesX86, @"Google\Chrome\Application\chrome.exe"));
+                candidates.Add(Path.Combine(progFilesX86, @"Microsoft\Edge\Application\msedge.exe"));
+                candidates.Add(Path.Combine(progFilesX86, @"BraveSoftware\Brave-Browser\Application\brave.exe"));
+            }
+
+            if (!string.IsNullOrEmpty(localAppData))
+            {
+                candidates.Add(Path.Combine(localAppData, @"Google\Chrome\Application\chrome.exe"));
+                candidates.Add(Path.Combine(localAppData, @"Microsoft\Edge\Application\msedge.exe"));
+                candidates.Add(Path.Combine(localAppData, @"BraveSoftware\Brave-Browser\Application\brave.exe"));
+                candidates.Add(Path.Combine(localAppData, @"imput\Helium\Application\chrome.exe"));
+            }
+
+            foreach (string candidate in candidates)
+            {
+                try
+                {
+                    if (File.Exists(candidate))
+                    {
+                        return candidate;
+                    }
+                }
+                catch {}
+            }
+
+            return null;
+        }
+
+        static string ReadAppPathRegistry(string exeName)
+        {
+            try
+            {
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + exeName))
+                {
+                    if (key != null)
+                    {
+                        object val = key.GetValue(null);
+                        if (val != null && File.Exists(val.ToString()))
+                        {
+                            return val.ToString();
+                        }
+                    }
+                }
+            }
             catch {}
+
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + exeName))
+                {
+                    if (key != null)
+                    {
+                        object val = key.GetValue(null);
+                        if (val != null && File.Exists(val.ToString()))
+                        {
+                            return val.ToString();
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            return null;
         }
     }
 }
