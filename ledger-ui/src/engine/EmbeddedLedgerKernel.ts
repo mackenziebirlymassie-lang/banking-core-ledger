@@ -143,7 +143,17 @@ export class EmbeddedLedgerKernel {
   private listeners: ((event: StreamEvent) => void)[] = [];
 
   constructor() {
-    this.loadOrSeed();
+    try {
+      this.loadOrSeed();
+    } catch (err) {
+      console.error('[EmbeddedLedgerKernel] Failed to load/seed:', err);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {}
+      this.accounts.clear();
+      this.transactions = [];
+      this.idempotencyMap.clear();
+    }
   }
 
   public onEvent(listener: (event: StreamEvent) => void): () => void {
@@ -297,41 +307,41 @@ export class EmbeddedLedgerKernel {
       this.executeTransferInternal({ legs, description: desc }, idemp);
     };
 
-    // Tx 1: Initial Central Treasury Liquidity Injection ($1,000,000.00)
-    postLegs('seed-tx-01', 'Initial Central Treasury Liquidity Injection', [
-      { accountId: treasury.id, amountMinor: 100_000_000, direction: 'DEBIT' },
-      { accountId: reserve.id, amountMinor: 100_000_000, direction: 'CREDIT' },
+    // Tx 1: Central Treasury Capital Injection to Operating Reserve ($1,000,000.00)
+    postLegs('seed-tx-01', 'Treasury capital injection to Operating Reserve ($1,000,000.00)', [
+      { accountId: treasury.id, amountMinor: 100_000_000, direction: 'CREDIT' },
+      { accountId: reserve.id, amountMinor: 100_000_000, direction: 'DEBIT' },
     ]);
 
-    // Tx 2: Operating Reserve Capital Allocation ($250,000.00)
-    postLegs('seed-tx-02', 'Operating Reserve Capital Allocation', [
-      { accountId: reserve.id, amountMinor: 25_000_000, direction: 'DEBIT' },
-      { accountId: treasury.id, amountMinor: 25_000_000, direction: 'CREDIT' },
+    // Tx 2: Customer Deposit Alice ($50,000.00)
+    postLegs('seed-tx-02', 'Initial customer deposit Alice ($50,000.00)', [
+      { accountId: treasury.id, amountMinor: 5_000_000, direction: 'DEBIT' },
+      { accountId: alice.id, amountMinor: 5_000_000, direction: 'CREDIT' },
     ]);
 
-    // Tx 3: Alice Direct Deposit Funding ($10,000.00)
-    postLegs('seed-tx-03', 'Direct Deposit Payroll: Alice ($10,000.00)', [
-      { accountId: treasury.id, amountMinor: 1_000_000, direction: 'DEBIT' },
-      { accountId: alice.id, amountMinor: 1_000_000, direction: 'CREDIT' },
+    // Tx 3: Customer Deposit Bob ($50,000.00)
+    postLegs('seed-tx-03', 'Initial customer deposit Bob ($50,000.00)', [
+      { accountId: treasury.id, amountMinor: 5_000_000, direction: 'DEBIT' },
+      { accountId: bob.id, amountMinor: 5_000_000, direction: 'CREDIT' },
     ]);
 
-    // Tx 4: Bob Direct Deposit Funding ($10,000.00)
-    postLegs('seed-tx-04', 'Direct Deposit Payroll: Bob ($10,000.00)', [
-      { accountId: treasury.id, amountMinor: 1_000_000, direction: 'DEBIT' },
-      { accountId: bob.id, amountMinor: 1_000_000, direction: 'CREDIT' },
+    // Tx 4: Merchant Settlement Float Stripe ($100,000.00)
+    postLegs('seed-tx-04', 'Merchant settlement liquidity float Stripe ($100,000.00)', [
+      { accountId: treasury.id, amountMinor: 10_000_000, direction: 'DEBIT' },
+      { accountId: stripe.id, amountMinor: 10_000_000, direction: 'CREDIT' },
     ]);
 
     // Tx 5 - 14: Purchases with Fee Revenue Splits
     const purchases = [
-      [12_500, 12_125, 375],
-      [4_200, 4_074, 126],
-      [8_990, 8_720, 270],
-      [23_000, 22_310, 690],
-      [1_500, 1_455, 45],
-      [6_400, 6_208, 192],
-      [31_000, 30_070, 930],
-      [5_750, 5_577, 173],
-      [14_200, 13_774, 426],
+      [15_000, 14_550, 450],
+      [20_000, 19_400, 600],
+      [5_000, 4_850, 150],
+      [7_500, 7_275, 225],
+      [30_000, 29_100, 900],
+      [12_000, 11_640, 360],
+      [8_500, 8_245, 255],
+      [4_500, 4_365, 135],
+      [22_000, 21_340, 660],
       [9_500, 9_215, 285],
     ];
 
