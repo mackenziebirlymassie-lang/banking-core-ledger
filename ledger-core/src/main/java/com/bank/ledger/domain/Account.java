@@ -30,17 +30,35 @@ public final class Account {
         AccountType type,
         boolean allowNegativeBalance
     ) {
+        this(id, accountNumber, currency, type, allowNegativeBalance, 0L, 0L, 0L, 0L, 0L);
+    }
+
+    /**
+     * Hydration constructor for reconstructing persistent account state.
+     */
+    public Account(
+        UUID id,
+        String accountNumber,
+        String currency,
+        AccountType type,
+        boolean allowNegativeBalance,
+        long postedDebits,
+        long postedCredits,
+        long pendingDebits,
+        long pendingCredits,
+        long version
+    ) {
         this.id = Objects.requireNonNull(id, "Account id must not be null");
         this.accountNumber = Objects.requireNonNull(accountNumber, "accountNumber must not be null");
         this.currency = validateCurrency(currency);
         this.type = Objects.requireNonNull(type, "accountType must not be null");
         this.allowNegativeBalance = allowNegativeBalance;
 
-        this.version = new AtomicLong(0L);
-        this.postedDebits = new AtomicLong(0L);
-        this.postedCredits = new AtomicLong(0L);
-        this.pendingDebits = new AtomicLong(0L);
-        this.pendingCredits = new AtomicLong(0L);
+        this.version = new AtomicLong(version);
+        this.postedDebits = new AtomicLong(postedDebits);
+        this.postedCredits = new AtomicLong(postedCredits);
+        this.pendingDebits = new AtomicLong(pendingDebits);
+        this.pendingCredits = new AtomicLong(pendingCredits);
     }
 
     private static String validateCurrency(String code) {
