@@ -148,18 +148,39 @@ public class LedgerDataSeeder implements ApplicationRunner {
         // Tx 21: Card Hold Alice ($45.00)
         LedgerTransaction hold3 = engine.authorizeHold("seed-tx-21", "Gas Pump Pre-Authorization", alice.getId(), escrow.getId(), 4_500L);
 
-        // Tx 22: Settle Hold 1
+        // Tx 22: Settle Hold 1 (Transitions Tx 19 to POSTED)
         engine.settleHold(hold1.id());
 
-        // Tx 23: Settle Hold 2
+        // Tx 23: Settle Hold 2 (Transitions Tx 20 to POSTED)
         engine.settleHold(hold2.id());
 
-        // Tx 24: Void Hold 3
+        // Tx 24: Void Hold 3 (Transitions Tx 21 to VOIDED)
         engine.voidHold(hold3.id());
+
+        // Tx 22: Merchant Payout Sweep
+        postBalanced(
+            "seed-tx-22", "Merchant daily payout sweep: Stripe -> Treasury ($500.00)",
+            stripe.getId(), 50_000L, Direction.DEBIT,
+            treasury.getId(), 50_000L, Direction.CREDIT
+        );
+
+        // Tx 23: Treasury Interest Accrual
+        postBalanced(
+            "seed-tx-23", "Treasury overnight yield accrual to Operating Reserve ($150.00)",
+            treasury.getId(), 15_000L, Direction.DEBIT,
+            reserve.getId(), 15_000L, Direction.CREDIT
+        );
+
+        // Tx 24: ATM Cash Dispense & Network Fee
+        postBalanced(
+            "seed-tx-24", "ATM cash withdrawal: Bob ($200.00)",
+            bob.getId(), 20_000L, Direction.DEBIT,
+            treasury.getId(), 20_000L, Direction.CREDIT
+        );
 
         // Tx 25: Operating Reserve to Treasury Liquidity Sweep ($100.00)
         postBalanced(
-            "seed-tx-25", "Operating Reserve liquidity sweep to Treasury",
+            "seed-tx-25", "Operating Reserve liquidity sweep to Treasury ($100.00)",
             reserve.getId(), 10_000L, Direction.CREDIT,
             treasury.getId(), 10_000L, Direction.DEBIT
         );

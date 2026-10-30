@@ -58,7 +58,7 @@ class LedgerApiIntegrationTest {
         mockMvc.perform(get("/api/v1/audit/verify"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.valid").value(true))
-            .andExpect(jsonPath("$.totalTransactionsScanned").value(22))
+            .andExpect(jsonPath("$.totalTransactionsScanned").value(25))
             .andExpect(jsonPath("$.merkleRoot").isNotEmpty());
     }
 

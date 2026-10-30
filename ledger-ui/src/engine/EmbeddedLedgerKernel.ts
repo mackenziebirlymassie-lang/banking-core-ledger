@@ -390,19 +390,37 @@ export class EmbeddedLedgerKernel {
       description: 'Gas Pump Pre-Authorization',
     }, 'seed-tx-21');
 
-    // Settle Hold 1
-    this.settleHoldInternal(hold1.id, 'seed-tx-22-settle');
+    // Settle Hold 1 (Transitions Tx 19 to POSTED)
+    this.settleHoldInternal(hold1.id, 'seed-tx-19-settle');
 
-    // Settle Hold 2
-    this.settleHoldInternal(hold2.id, 'seed-tx-23-settle');
+    // Settle Hold 2 (Transitions Tx 20 to POSTED)
+    this.settleHoldInternal(hold2.id, 'seed-tx-20-settle');
 
-    // Void Hold 3
-    this.voidHoldInternal(hold3.id, 'seed-tx-24-void');
+    // Void Hold 3 (Transitions Tx 21 to VOIDED)
+    this.voidHoldInternal(hold3.id, 'seed-tx-21-void');
+
+    // Tx 22: Merchant Payout Sweep
+    postLegs('seed-tx-22', 'Merchant daily payout sweep: Stripe -> Treasury ($500.00)', [
+      { accountId: stripe.id, amountMinor: 50_000, direction: 'DEBIT' },
+      { accountId: treasury.id, amountMinor: 50_000, direction: 'CREDIT' },
+    ]);
+
+    // Tx 23: Treasury Interest Accrual
+    postLegs('seed-tx-23', 'Treasury overnight yield accrual to Operating Reserve ($150.00)', [
+      { accountId: treasury.id, amountMinor: 15_000, direction: 'DEBIT' },
+      { accountId: reserve.id, amountMinor: 15_000, direction: 'CREDIT' },
+    ]);
+
+    // Tx 24: ATM Cash Dispense & Network Fee
+    postLegs('seed-tx-24', 'ATM cash withdrawal: Bob ($200.00)', [
+      { accountId: bob.id, amountMinor: 20_000, direction: 'DEBIT' },
+      { accountId: treasury.id, amountMinor: 20_000, direction: 'CREDIT' },
+    ]);
 
     // Tx 25: Operating Reserve to Treasury Liquidity Sweep ($100.00)
     postLegs('seed-tx-25', 'Operating Reserve to Treasury Liquidity Sweep ($100.00)', [
-      { accountId: reserve.id, amountMinor: 10_000, direction: 'DEBIT' },
-      { accountId: treasury.id, amountMinor: 10_000, direction: 'CREDIT' },
+      { accountId: reserve.id, amountMinor: 10_000, direction: 'CREDIT' },
+      { accountId: treasury.id, amountMinor: 10_000, direction: 'DEBIT' },
     ]);
   }
 

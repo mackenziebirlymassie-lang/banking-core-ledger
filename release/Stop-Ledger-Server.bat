@@ -7,17 +7,20 @@ echo ===================================================
 echo.
 
 set FOUND=0
+set KILLED_PIDS=
 
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8080 " ^| findstr "LISTENING"') do (
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8080 " ^| findstr "LISTENING"') do (
     set PID=%%a
     if not "!PID!"=="0" (
-        echo Found active Ledger Engine on port 8080 with PID: !PID!
-        taskkill /F /PID !PID! >nul 2>&1
-        if !ERRORLEVEL! equ 0 (
-            echo Successfully terminated PID !PID!.
-            set FOUND=1
-        ) else (
-            echo Could not terminate PID !PID!.
+        echo !KILLED_PIDS! | findstr " !PID! " >nul
+        if errorlevel 1 (
+            set "KILLED_PIDS=!KILLED_PIDS! !PID! "
+            echo Found active Ledger Engine on port 8080 with PID: !PID!
+            taskkill /F /PID !PID! >nul 2>&1
+            if !ERRORLEVEL! equ 0 (
+                echo Successfully terminated PID !PID!.
+                set FOUND=1
+            )
         )
     )
 )
@@ -29,4 +32,4 @@ if "!FOUND!"=="0" (
 )
 
 echo.
-timeout /t 3 >nul
+ping 127.0.0.1 -n 2 >nul

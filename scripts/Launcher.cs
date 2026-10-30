@@ -2,12 +2,15 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace CoreBankingLedger
 {
     class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -15,7 +18,7 @@ namespace CoreBankingLedger
 
             if (!File.Exists(jarPath))
             {
-                // Fallback check parent directory
+                // Fallback check parent project directory
                 string parentJar = Path.Combine(baseDir, "..", "ledger-core", "target", "ledger-core-1.0.0-SNAPSHOT.jar");
                 if (File.Exists(parentJar))
                 {
@@ -42,11 +45,12 @@ namespace CoreBankingLedger
             {
                 if (!File.Exists(jarPath))
                 {
-                    System.Windows.Forms.MessageBox.Show(
-                        "Could not locate ledger-all-in-one.jar in:\n" + baseDir,
+                    MessageBox.Show(
+                        "Could not locate ledger-all-in-one.jar in:\n" + baseDir +
+                        "\n\nPlease ensure ledger-all-in-one.jar is located in the release folder.",
                         "Core Banking Ledger Error",
-                        System.Windows.Forms.MessageBoxButtons.OK,
-                        System.Windows.Forms.MessageBoxIcon.Error
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
                     );
                     return;
                 }
@@ -58,6 +62,8 @@ namespace CoreBankingLedger
                 psi.Arguments = "-Dheadless=true --enable-preview -jar \"" + jarPath + "\"";
                 psi.WorkingDirectory = baseDir;
                 psi.UseShellExecute = false;
+                psi.RedirectStandardError = true;
+                psi.RedirectStandardOutput = false;
 
                 if (!consoleMode)
                 {
@@ -65,26 +71,61 @@ namespace CoreBankingLedger
                     psi.WindowStyle = ProcessWindowStyle.Hidden;
                 }
 
+                Process javaProc = new Process();
+                javaProc.StartInfo = psi;
+
+                StringBuilder stderrBuffer = new StringBuilder();
+                javaProc.ErrorDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        lock (stderrBuffer)
+                        {
+                            stderrBuffer.AppendLine(e.Data);
+                        }
+                    }
+                };
+
                 try
                 {
-                    Process.Start(psi);
+                    javaProc.Start();
+                    javaProc.BeginErrorReadLine();
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.Forms.MessageBox.Show(
-                        "Failed to launch Java runtime (" + javaExe + "):\n" + ex.Message,
+                    MessageBox.Show(
+                        "Failed to launch Java runtime (" + javaExe + "):\n\n" + ex.Message +
+                        "\n\nPlease ensure Java 21 is installed and available.",
                         "Core Banking Ledger Error",
-                        System.Windows.Forms.MessageBoxButtons.OK,
-                        System.Windows.Forms.MessageBoxIcon.Error
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
                     );
                     return;
                 }
 
-                // 2. Poll until backend is online (up to 30s)
+                // 2. Poll until backend is online (up to 30 seconds)
                 int retries = 75;
                 bool ready = false;
                 while (retries-- > 0)
                 {
+                    if (javaProc.HasExited)
+                    {
+                        string errOut;
+                        lock (stderrBuffer)
+                        {
+                            errOut = stderrBuffer.ToString().Trim();
+                        }
+
+                        MessageBox.Show(
+                            "Ledger backend process terminated unexpectedly (Exit Code: " + javaProc.ExitCode + ").\n\n" +
+                            (string.IsNullOrEmpty(errOut) ? "No standard error captured." : ("Error Output:\n" + errOut)),
+                            "Core Banking Ledger Startup Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+                        return;
+                    }
+
                     Thread.Sleep(400);
                     if (IsBackendAlive(healthUrl))
                     {
@@ -95,16 +136,17 @@ namespace CoreBankingLedger
 
                 if (!ready)
                 {
-                    System.Windows.Forms.MessageBox.Show(
-                        "Ledger backend did not respond within 30 seconds on port 8080.",
-                        "Core Banking Ledger Warning",
-                        System.Windows.Forms.MessageBoxButtons.OK,
-                        System.Windows.Forms.MessageBoxIcon.Warning
+                    MessageBox.Show(
+                        "Ledger backend did not respond within 30 seconds on port 8080.\n" +
+                        "The application window will open, but service may still be initializing.",
+                        "Core Banking Ledger Notice",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
                     );
                 }
             }
 
-            // 3. Open dedicated native app window
+            // 3. Open single dedicated native app window
             LaunchBrowserApp(targetUrl);
         }
 
@@ -130,7 +172,19 @@ namespace CoreBankingLedger
         {
             string exeName = consoleMode ? "java.exe" : "javaw.exe";
 
-            // Check JAVA_HOME
+            // 1. Explicit user profile Corretto / JDK 21
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (!string.IsNullOrEmpty(userProfile))
+            {
+                string correttoPath = Path.Combine(userProfile, ".jdk", "jdk21.0.13_0", "bin", exeName);
+                if (File.Exists(correttoPath)) return correttoPath;
+            }
+
+            // Fallback hardcoded user path
+            string hardcodedJdk = @"C:\Users\Kenny\.jdk\jdk21.0.13_0\bin\" + exeName;
+            if (File.Exists(hardcodedJdk)) return hardcodedJdk;
+
+            // 2. JAVA_HOME
             string javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
             if (!string.IsNullOrEmpty(javaHome))
             {
@@ -138,12 +192,18 @@ namespace CoreBankingLedger
                 if (File.Exists(candidate)) return candidate;
             }
 
-            // Check explicit known Corretto 21 JDK path
-            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            string correttoPath = Path.Combine(userProfile, ".jdk", "jdk21.0.13_0", "bin", exeName);
-            if (File.Exists(correttoPath)) return correttoPath;
+            // 3. Program Files Java 21 standard locations
+            string progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            if (!string.IsNullOrEmpty(progFiles))
+            {
+                string candidate1 = Path.Combine(progFiles, "Java", "jdk-21", "bin", exeName);
+                if (File.Exists(candidate1)) return candidate1;
 
-            // Default to PATH
+                string candidate2 = Path.Combine(progFiles, "Eclipse Adoptium", "jdk-21", "bin", exeName);
+                if (File.Exists(candidate2)) return candidate2;
+            }
+
+            // 4. Default to system PATH
             return exeName;
         }
 
@@ -179,7 +239,7 @@ namespace CoreBankingLedger
             }
             catch {}
 
-            // Fallback default browser
+            // Fallback default system browser
             try
             {
                 Process.Start(new ProcessStartInfo
