@@ -5,7 +5,7 @@ An ultra-resilient, ACID-compliant double-entry ledger and core banking engine d
 ## Project Structure
 
 ```
-core-banking-ledger/
+banking-core-ledger/
 ├── backend/       # Java core accounting engine, invariant validator, and REST/gRPC API
 ├── frontend/      # TypeScript + React + HTML5 + CSS3 high-density treasury dashboard
 └── docs/          # Architecture specs, database schemas, and accounting invariant proofs
