@@ -31,6 +31,43 @@ interface HeaderTelemetryBarProps {
   lastAuditReport: AuditReport | null;
 }
 
+const LedgerVaultEmblem: React.FC = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ flexShrink: 0 }}
+  >
+    <defs>
+      <radialGradient id="vaultBgHeader" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#0f172a" />
+        <stop offset="100%" stopColor="#07090e" />
+      </radialGradient>
+      <linearGradient id="cyanGradHeader" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#38bdf8" />
+        <stop offset="100%" stopColor="#0284c7" />
+      </linearGradient>
+      <linearGradient id="emeraldGradHeader" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#34d399" />
+        <stop offset="100%" stopColor="#059669" />
+      </linearGradient>
+    </defs>
+    <rect x="3" y="3" width="94" height="94" rx="21" fill="url(#vaultBgHeader)" stroke="#1e2638" strokeWidth="2.5" />
+    <circle cx="50" cy="50" r="32" stroke="#161f33" strokeWidth="3" />
+    <line x1="50" y1="16" x2="50" y2="20" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
+    <line x1="50" y1="80" x2="50" y2="84" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+    <line x1="16" y1="50" x2="20" y2="50" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
+    <line x1="80" y1="50" x2="84" y2="50" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+    <path d="M 50 28 A 22 22 0 0 0 50 72" stroke="url(#cyanGradHeader)" strokeWidth="6" strokeLinecap="round" />
+    <path d="M 50 28 A 22 22 0 0 1 50 72" stroke="url(#emeraldGradHeader)" strokeWidth="6" strokeLinecap="round" />
+    <line x1="36" y1="50" x2="64" y2="50" stroke="#f1f5f9" strokeWidth="2.5" strokeLinecap="round" />
+    <polygon points="50,45 55,50 50,55 45,50" fill="#f8fafc" stroke="#38bdf8" strokeWidth="1.2" />
+    <circle cx="50" cy="50" r="1.5" fill="#0284c7" />
+  </svg>
+);
+
 export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
   accounts,
   connectionStatus,
@@ -84,6 +121,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           paddingRight: '8px',
           borderRight: '1px solid var(--border-grid)',
         }}>
+          <LedgerVaultEmblem />
           <span className="font-mono" style={{
             fontWeight: 700,
             fontSize: '12px',

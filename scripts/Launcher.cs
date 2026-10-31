@@ -3,10 +3,24 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
+
+[assembly: AssemblyTitle("Core Banking Ledger")]
+[assembly: AssemblyDescription("Institutional High-Density Cryptographic Core Banking Ledger & Treasury Terminal")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Core Banking Technologies Inc.")]
+[assembly: AssemblyProduct("Core Banking Ledger")]
+[assembly: AssemblyCopyright("Copyright © 2026 Core Banking Technologies")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+[assembly: ComVisible(false)]
+[assembly: AssemblyVersion("2.1.0.0")]
+[assembly: AssemblyFileVersion("2.1.0.0")]
 
 namespace CoreBankingLedger
 {

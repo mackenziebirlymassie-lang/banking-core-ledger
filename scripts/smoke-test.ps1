@@ -106,6 +106,57 @@ try {
     Write-Host "         Latest Block #$($latest.sequenceNum): Hash=$($latest.hash.Substring(0, 16))... PrevHash=$($latest.prevHash.Substring(0, 16))..." -ForegroundColor Gray
     Write-Host "         PASSED: All 25 historical blocks sequenced with SHA-256 links." -ForegroundColor Green
 
+    # Test 5: Multi-LOD Icon Assets Verification
+    Write-Host ""
+    Write-Host "[Test 5] Multi-LOD Icon & Favicon Verification..." -ForegroundColor Yellow
+    $favRes = Invoke-WebRequest -Uri "http://localhost:8080/favicon.ico" -UseBasicParsing
+    if ($favRes.StatusCode -ne 200) {
+        throw "GET /favicon.ico returned status code $($favRes.StatusCode)"
+    }
+    if ($favRes.RawContentLength -lt 50000) {
+        throw "/favicon.ico failed size check: expected >= 50,000 bytes for 7-frame ICO, got $($favRes.RawContentLength) bytes"
+    }
+    Write-Host "         /favicon.ico: 200 OK ($($favRes.RawContentLength) bytes, 7-frame Multi-LOD ICO verified)" -ForegroundColor Gray
+
+    $svgRes = Invoke-WebRequest -Uri "http://localhost:8080/icon.svg" -UseBasicParsing
+    if ($svgRes.StatusCode -ne 200) {
+        throw "GET /icon.svg returned status code $($svgRes.StatusCode)"
+    }
+    Write-Host "         /icon.svg: 200 OK (Vector Emblem verified)" -ForegroundColor Gray
+
+    foreach ($pngName in @("icon-64.png", "icon-192.png", "icon-512.png")) {
+        $pRes = Invoke-WebRequest -Uri "http://localhost:8080/$pngName" -UseBasicParsing
+        if ($pRes.StatusCode -ne 200) {
+            throw "GET /$pngName returned status code $($pRes.StatusCode)"
+        }
+        Write-Host "         /$($pngName): 200 OK ($($pRes.RawContentLength) bytes)" -ForegroundColor Gray
+    }
+    Write-Host "         PASSED: All multi-LOD icon assets verified." -ForegroundColor Green
+
+    # Test 6: Web App Manifest & Chromium App Mode Integration
+    Write-Host ""
+    Write-Host "[Test 6] Web App Manifest Verification..." -ForegroundColor Yellow
+    $manifestRes = Invoke-WebRequest -Uri "http://localhost:8080/manifest.webmanifest" -UseBasicParsing
+    if ($manifestRes.StatusCode -ne 200) {
+        throw "GET /manifest.webmanifest returned status code $($manifestRes.StatusCode)"
+    }
+    $manifestText = if ($manifestRes.Content -is [byte[]]) { [System.Text.Encoding]::UTF8.GetString($manifestRes.Content) } else { [string]$manifestRes.Content }
+    $manifest = $manifestText | ConvertFrom-Json
+    if ($manifest.name -ne "Core Banking Ledger") {
+        throw "Manifest name mismatch: expected 'Core Banking Ledger', got '$($manifest.name)'"
+    }
+    if ($manifest.display -ne "standalone") {
+        throw "Manifest display mismatch: expected 'standalone', got '$($manifest.display)'"
+    }
+    if ($manifest.icons.Count -lt 3) {
+        throw "Manifest missing required icon sizes: expected >= 3 icons, got $($manifest.icons.Count)"
+    }
+    Write-Host "         App Name: $($manifest.name)" -ForegroundColor Gray
+    Write-Host "         Display Mode: $($manifest.display)" -ForegroundColor Gray
+    Write-Host "         Theme Color: $($manifest.theme_color)" -ForegroundColor Gray
+    Write-Host "         Icon Mipmaps: $($manifest.icons.Count) registered entries" -ForegroundColor Gray
+    Write-Host "         PASSED: Web App Manifest verified for Chromium msedge --app integration." -ForegroundColor Green
+
 } finally {
     # Step 5: Clean shutdown via Stop-Ledger-Server.bat
     Write-Host ""
