@@ -36,8 +36,8 @@ interface HeaderTelemetryBarProps {
 
 const LedgerVaultEmblem: React.FC = () => (
   <svg
-    width="20"
-    height="20"
+    width="22"
+    height="22"
     viewBox="0 0 100 100"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
@@ -104,14 +104,14 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
 
   return (
     <header style={{
-      height: '38px',
+      height: '48px',
       background: 'var(--bg-panel)',
       borderBottom: '1px solid var(--border-grid)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 10px',
-      gap: '8px',
+      padding: '0 24px',
+      gap: '16px',
       flexShrink: 0,
       zIndex: 10,
       userSelect: 'none',
@@ -121,14 +121,14 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          paddingRight: '8px',
+          gap: '8px',
+          paddingRight: '12px',
           borderRight: '1px solid var(--border-grid)',
         }}>
           <LedgerVaultEmblem />
           <span className="font-mono" style={{
             fontWeight: 700,
-            fontSize: '12px',
+            fontSize: '13px',
             letterSpacing: '0.06em',
             color: '#f8fafc',
           }}>
@@ -150,7 +150,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
         <button
           onClick={onToggleEngineMode}
           className="btn btn-secondary"
-          style={{ height: '26px', padding: '0 7px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+          style={{ height: '30px', padding: '0 10px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
           title="Toggle between Java 21 Backend and Standalone Embedded Kernel"
         >
           <Cpu size={12} strokeWidth={1.5} style={{ color: isJava ? 'var(--border-accent)' : '#a78bfa' }} />
@@ -163,7 +163,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: '5px',
-          padding: '2px 6px',
+          padding: '4px 10px',
           background: 'var(--bg-canvas)',
           border: '1px solid var(--border-grid)',
           borderRadius: '2px',
@@ -187,13 +187,13 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          padding: '2px 8px',
+          padding: '4px 12px',
           background: isGlobalBalanced ? 'var(--acc-credit-bg)' : 'var(--acc-debit-bg)',
           border: `1px solid ${isGlobalBalanced ? 'var(--acc-credit-border)' : 'var(--acc-debit-border)'}`,
           borderRadius: '2px',
         }} title="System-wide Double-Entry Balancing Invariant">
           <span className="font-mono tabular-nums" style={{
-            fontSize: '11px',
+            fontSize: '12px',
             fontWeight: 600,
             color: isGlobalBalanced ? 'var(--acc-credit)' : 'var(--acc-debit)',
           }}>
@@ -206,11 +206,11 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          padding: '2px 8px',
+          padding: '4px 12px',
           background: 'var(--bg-canvas)',
           border: '1px solid var(--border-grid)',
           borderRadius: '2px',
-          fontSize: '11px',
+          fontSize: '12px',
           fontFamily: 'var(--font-mono)',
         }}>
           <span style={{ color: 'var(--text-muted)' }}>CHAIN:</span>
@@ -228,7 +228,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           className="btn btn-secondary"
           onClick={onVerifyAudit}
           disabled={isVerifyingAudit}
-          style={{ height: '26px', fontSize: '11px' }}
+          style={{ height: '30px', fontSize: '12px', padding: '0 10px' }}
           title="Verify full SHA-256 chain and Merkle root against binary WAL (Hotkey: V)"
         >
           {isVerifyingAudit ? (
@@ -265,12 +265,12 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
       </div>
 
       {/* Action Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {!isJava && onResetState && (
           <button
             className="btn btn-secondary"
             onClick={onResetState}
-            style={{ height: '26px', fontSize: '11px', color: '#f59e0b' }}
+            style={{ height: '30px', fontSize: '12px', padding: '0 10px', color: '#f59e0b' }}
             title="Reset embedded standalone state back to institutional seed (Hotkey: R)"
           >
             <RotateCcw size={11} strokeWidth={1.5} />
@@ -283,7 +283,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           className="btn btn-burst"
           onClick={() => onRunBurst(burstCount)}
           disabled={isBurstRunning}
-          style={{ height: '26px', fontSize: '11px' }}
+          style={{ height: '30px', fontSize: '12px', padding: '0 10px' }}
           title={`Simulate ${burstCount} concurrent double-entry transfers (Hotkey: B)`}
         >
           <Zap size={11} strokeWidth={1.5} />
@@ -294,7 +294,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
         <button
           className="btn btn-secondary"
           onClick={onOpenCreateAccount}
-          style={{ height: '26px', fontSize: '11px' }}
+          style={{ height: '30px', fontSize: '12px', padding: '0 10px' }}
           title="Create a new account in Chart of Accounts"
         >
           <Building size={11} strokeWidth={1.5} />
@@ -304,7 +304,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
         <button
           className="btn btn-primary"
           onClick={onOpenTransferModal}
-          style={{ height: '26px', fontSize: '11px' }}
+          style={{ height: '30px', fontSize: '12px', padding: '0 10px' }}
           title="Create Double-Entry Transfer or Authorization Hold (Hotkey: N)"
         >
           <Plus size={11} strokeWidth={2} />
@@ -315,7 +315,7 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           <button
             className="btn btn-secondary"
             onClick={onOpenSettings}
-            style={{ height: '26px', fontSize: '11px' }}
+            style={{ height: '30px', fontSize: '12px', padding: '0 10px' }}
             title="Open System Configuration & Preferences (Hotkey: ,)"
           >
             <Sliders size={11} strokeWidth={1.5} style={{ color: 'var(--border-accent)' }} />

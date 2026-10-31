@@ -201,8 +201,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     >
       <div
         style={{
-          width: '760px',
-          height: '520px',
+          width: '880px',
+          height: '600px',
           background: '#0c0f17',
           border: '1px solid var(--border-grid)',
           boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7)',
@@ -216,13 +216,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Modal Top Title Bar */}
         <div
           style={{
-            height: '38px',
+            height: '48px',
             background: 'var(--bg-panel)',
             borderBottom: '1px solid var(--border-grid)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 14px',
+            padding: '0 24px',
             flexShrink: 0,
             userSelect: 'none',
           }}
@@ -281,7 +281,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Left Vertical Navigation */}
           <div
             style={{
-              width: '220px',
+              width: '240px',
               borderRight: '1px solid var(--border-grid)',
               background: '#080a11',
               display: 'flex',
@@ -304,13 +304,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    padding: '8px 14px',
+                    padding: '10px 16px',
                     background: active ? '#111726' : 'transparent',
                     color: active ? '#f8fafc' : 'var(--text-muted)',
                     border: 'none',
                     borderLeft: active ? '2px solid var(--border-accent)' : '2px solid transparent',
                     cursor: 'pointer',
-                    fontSize: '10px',
+                    fontSize: '11px',
                     fontWeight: active ? 600 : 400,
                     fontFamily: 'var(--font-mono)',
                     textAlign: 'left',
@@ -338,11 +338,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '16px 20px',
+              padding: '32px',
               background: '#0c0f17',
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px',
+              gap: '24px',
             }}
           >
             {/* TAB 0: DISPLAY & CONVENTIONS */}
@@ -361,7 +361,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={mode}
                         onClick={() => updateSettings({ timeDisplay: mode })}
                         className={`btn ${settings.timeDisplay === mode ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ height: '28px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+                        style={{ height: '32px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
                       >
                         {mode === 'UTC' ? 'UTC (ZULU)' : mode === 'LOCAL' ? 'LOCAL TIMEZONE' : 'UNIX MS'}
                       </button>
@@ -382,7 +382,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={fmt}
                         onClick={() => updateSettings({ currencyFormat: fmt })}
                         className={`btn ${settings.currencyFormat === fmt ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ height: '28px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+                        style={{ height: '32px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
                       >
                         {fmt === 'SYMBOL' ? 'SYMBOL: $1,250.00' : fmt === 'ISO_CODE' ? 'ISO: USD 1,250.00' : 'RAW: 125000 ¢'}
                       </button>
@@ -403,9 +403,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={density}
                         onClick={() => updateSettings({ densityMode: density })}
                         className={`btn ${settings.densityMode === density ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ flex: 1, height: '28px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+                        style={{ flex: 1, height: '32px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
                       >
-                        {density === 'COMPACT' ? 'COMPACT (26px)' : 'STANDARD (30px)'}
+                        {density === 'COMPACT' ? 'COMPACT (36px)' : 'STANDARD (44px)'}
                       </button>
                     ))}
                     {(['MUTED', 'SLASHED'] as ZeroStyle[]).map(z => (
@@ -413,7 +413,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={z}
                         onClick={() => updateSettings({ zeroStyle: z })}
                         className={`btn ${settings.zeroStyle === z ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ flex: 1, height: '28px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+                        style={{ flex: 1, height: '32px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
                       >
                         {z === 'SLASHED' ? 'SLASHED ZERO (Ø)' : 'MUTED ZERO (0.00)'}
                       </button>
@@ -478,7 +478,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={cnt}
                         onClick={() => updateSettings({ defaultBurstCount: cnt })}
                         className={`btn ${settings.defaultBurstCount === cnt ? 'btn-burst' : 'btn-secondary'}`}
-                        style={{ height: '28px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+                        style={{ height: '32px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
                       >
                         {cnt} TXs
                       </button>
@@ -504,7 +504,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={t.val}
                         onClick={() => updateSettings({ burstThrottleMs: t.val })}
                         className={`btn ${settings.burstThrottleMs === t.val ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ height: '28px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+                        style={{ height: '32px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
                       >
                         {t.label}
                       </button>
@@ -530,7 +530,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={h.val}
                         onClick={() => updateSettings({ autoAuditInterval: h.val })}
                         className={`btn ${settings.autoAuditInterval === h.val ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ height: '28px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+                        style={{ height: '32px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
                       >
                         {h.label}
                       </button>
@@ -723,7 +723,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       onClick={handlePingGateway}
                       disabled={isPinging}
                       className="btn btn-secondary"
-                      style={{ height: '28px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+                      style={{ height: '32px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
                     >
                       <Activity size={12} strokeWidth={1.5} />
                       <span>{isPinging ? 'PINGING...' : 'TEST LATENCY'}</span>

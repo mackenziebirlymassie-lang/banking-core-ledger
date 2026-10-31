@@ -62,7 +62,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
 
   return (
     <aside style={{
-      width: '290px',
+      width: '320px',
       height: '100%',
       background: 'var(--bg-panel)',
       borderRight: '1px solid var(--border-grid)',
@@ -73,8 +73,8 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
     }}>
       {/* Pane Header */}
       <div style={{
-        height: '34px',
-        padding: '0 10px',
+        height: '48px',
+        padding: '0 16px',
         borderBottom: '1px solid var(--border-grid)',
         display: 'flex',
         alignItems: 'center',
@@ -83,7 +83,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span className="font-mono" style={{ fontWeight: 700, fontSize: '11px', letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+          <span className="font-mono" style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
             Chart of Accounts
           </span>
           <span className="badge badge-neutral" style={{ fontSize: '9px' }}>
@@ -104,7 +104,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
       </div>
 
       {/* Account Search */}
-      <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-grid)', background: 'var(--bg-panel)', flexShrink: 0 }}>
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-grid)', background: 'var(--bg-panel)', flexShrink: 0 }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -112,7 +112,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
           background: 'var(--bg-canvas)',
           border: '1px solid var(--border-grid)',
           borderRadius: '2px',
-          padding: '3px 6px',
+          padding: '4px 10px', height: '32px',
         }}>
           <Search size={11} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
           <input
@@ -125,7 +125,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
               border: 'none',
               outline: 'none',
               color: 'var(--text-main)',
-              fontSize: '11px',
+              fontSize: '12px',
               width: '100%',
               fontFamily: 'var(--font-mono)',
             }}
@@ -166,7 +166,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '5px 8px',
+                  padding: '16px 16px 8px 16px',
                   background: 'var(--bg-elevated)',
                   cursor: 'pointer',
                   userSelect: 'none',
@@ -180,7 +180,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
                     <ChevronDown size={12} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
                   )}
                   <IconComp size={12} strokeWidth={1.5} style={{ color: meta.color }} />
-                  <span className="font-mono" style={{ fontWeight: 600, fontSize: '10px', color: meta.color, letterSpacing: '0.04em' }}>
+                  <span className="font-mono" style={{ fontWeight: 600, fontSize: '11px', color: meta.color, letterSpacing: '0.04em' }}>
                     {meta.label.toUpperCase()}
                   </span>
                   <span className={`badge-dir badge-dir-${meta.normalDir.toLowerCase()}`}>
@@ -211,11 +211,11 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
                           background: isSelected ? 'var(--bg-selected)' : 'var(--bg-panel)',
                           borderLeft: isSelected ? '2px solid var(--border-accent)' : '2px solid transparent',
                           borderBottom: '1px solid var(--border-grid)',
-                          padding: '6px 8px',
+                          padding: '10px 16px',
                           cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '3px',
+                          gap: '4px',
                           transition: 'background 0.1s ease',
                         }}
                         onMouseEnter={(e) => {

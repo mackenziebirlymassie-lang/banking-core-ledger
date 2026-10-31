@@ -76,7 +76,7 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
   }, [transactions, filteredAccountId, statusFilter, searchTerm]);
 
   const { settings } = useSettings();
-  const rowHeight = settings.densityMode === 'COMPACT' ? 26 : 30;
+  const rowHeight = settings.densityMode === 'COMPACT' ? 36 : 44;
 
   // Viewport Virtualization with dynamic row height based on density setting
   const rowVirtualizer = useVirtualizer({
@@ -97,27 +97,28 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
     }}>
       {/* 34px Table Control & Filter Header */}
       <div style={{
-        height: '34px',
-        padding: '0 10px',
+        height: '48px',
+        padding: '0 24px',
         borderBottom: '1px solid var(--border-grid)',
         background: 'var(--bg-elevated)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '8px',
+        gap: '16px',
         flexShrink: 0,
       }}>
         {/* Search & Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '8px',
             background: 'var(--bg-canvas)',
             border: '1px solid var(--border-grid)',
             borderRadius: '2px',
-            padding: '2px 6px',
-            maxWidth: '320px',
+            padding: '4px 10px',
+            maxWidth: '340px',
+            height: '32px',
             width: '100%',
           }}>
             <Search size={11} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
@@ -132,7 +133,7 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
                 border: 'none',
                 outline: 'none',
                 color: 'var(--text-main)',
-                fontSize: '11px',
+                fontSize: '12px',
                 width: '100%',
                 fontFamily: 'var(--font-mono)',
               }}
@@ -157,9 +158,9 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
                 onClick={() => setStatusFilter(status)}
                 className="btn"
                 style={{
-                  padding: '1px 6px',
-                  fontSize: '10px',
-                  height: '22px',
+                  padding: '2px 10px',
+                  fontSize: '11px',
+                  height: '26px',
                   fontFamily: 'var(--font-mono)',
                   background: statusFilter === status ? 'var(--bg-selected)' : 'transparent',
                   borderColor: statusFilter === status ? 'var(--border-strong)' : 'transparent',
@@ -197,7 +198,7 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
         </div>
 
         {/* Row count stats */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
           <span className="tabular-nums">
             {filtered.length} of {transactions.length} ROWS
           </span>
@@ -211,16 +212,16 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
       {/* Fixed Grid Header with 100% pixel-aligned columns */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '55px 95px 75px 1fr 60px 115px 125px 85px',
+        gridTemplateColumns: '65px 115px 85px 1fr 60px 140px 140px 95px',
         background: 'var(--bg-panel)',
         borderBottom: '1px solid var(--border-grid)',
-        fontSize: '10px',
+        fontSize: '11px',
         fontWeight: 600,
         color: 'var(--text-muted)',
         textTransform: 'uppercase',
         letterSpacing: '0.04em',
-        padding: '0 8px',
-        height: '26px',
+        padding: '0 24px',
+        height: '32px',
         alignItems: 'center',
         flexShrink: 0,
         userSelect: 'none',
@@ -286,9 +287,9 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                     display: 'grid',
-                    gridTemplateColumns: '55px 95px 75px 1fr 60px 115px 125px 85px',
+                    gridTemplateColumns: '65px 115px 85px 1fr 60px 140px 140px 95px',
                     alignItems: 'center',
-                    padding: '0 8px',
+                    padding: '0 24px',
                     borderBottom: '1px solid var(--border-grid)',
                     borderLeft: isSelected ? '2px solid var(--border-accent)' : '2px solid transparent',
                     background: isSelected
@@ -314,15 +315,15 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
                   <div className="tabular-nums font-mono text-right" style={{
                     color: isSelected ? 'var(--border-accent)' : 'var(--text-secondary)',
                     fontWeight: 600,
-                    fontSize: '11px',
-                    paddingRight: '6px',
+                    fontSize: '13px',
+                    paddingRight: '12px',
                   }}>
                     #{tx.sequenceNum}
                   </div>
 
                   {/* Timestamp */}
                   <div className="tabular-nums font-mono text-left" style={{
-                    fontSize: '10px',
+                    fontSize: '12px',
                     color: 'var(--text-muted)',
                   }} title={tx.postedAt}>
                     {formatTimestamp(tx.postedAt, settings.timeDisplay)}
@@ -342,23 +343,24 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
                     whiteSpace: 'nowrap',
                     paddingLeft: '6px',
                     color: 'var(--text-main)',
-                    fontSize: '11px',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
                     fontWeight: 500,
                   }}>
                     {tx.description}
                   </div>
 
                   {/* Legs count */}
-                  <div className="text-center font-mono tabular-nums" style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                  <div className="text-center font-mono tabular-nums" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                     {tx.postings.length}
                   </div>
 
                   {/* Amount (Strict Tabular Digits) */}
                   <div className="tabular-nums font-mono text-right" style={{
                     fontWeight: 600,
-                    fontSize: '11px',
+                    fontSize: '13px',
                     color: tx.status === 'VOIDED' ? 'var(--text-muted)' : 'var(--text-main)',
-                    paddingRight: '8px',
+                    paddingRight: '12px',
                   }}>
                     {formatMinor(
                       tx.totalAmountMinor,

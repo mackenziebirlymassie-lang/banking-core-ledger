@@ -68,7 +68,7 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
 
   return (
     <aside style={{
-      width: '380px',
+      width: '440px',
       height: '100%',
       background: 'var(--bg-panel)',
       borderLeft: '1px solid var(--border-grid)',
@@ -80,8 +80,8 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
     }}>
       {/* Drawer Header (Voucher Style) */}
       <div style={{
-        height: '34px',
-        padding: '0 10px',
+        height: '48px',
+        padding: '0 20px',
         borderBottom: '1px solid var(--border-grid)',
         display: 'flex',
         alignItems: 'center',
@@ -90,7 +90,7 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span className="font-mono" style={{ fontWeight: 700, fontSize: '11px', color: 'var(--border-accent)' }}>
+          <span className="font-mono" style={{ fontWeight: 700, fontSize: '12px', color: 'var(--border-accent)' }}>
             VOUCHER #{formattedSeq}
           </span>
           <span className={`badge badge-${transaction.status.toLowerCase()}`}>
@@ -108,19 +108,19 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
       </div>
 
       {/* Drawer Scrollable Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* Voucher Meta Info */}
         <div style={{
           background: 'var(--bg-canvas)',
           border: '1px solid var(--border-grid)',
           borderRadius: '2px',
-          padding: '8px 10px',
+          padding: '16px 18px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '6px',
+          gap: '10px',
         }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)' }}>
+          <div style={{ fontSize: '14px', lineHeight: '1.4', fontWeight: 600, color: 'var(--text-main)' }}>
             {transaction.description}
           </div>
 
@@ -129,7 +129,7 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
               <Clock size={11} strokeWidth={1.5} />
               <span className="tabular-nums font-mono">{formatTimestamp(transaction.postedAt, settings.timeDisplay)}</span>
             </div>
-            <div className="tabular-nums font-mono" style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-main)' }}>
+            <div className="tabular-nums font-mono" style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-main)' }}>
               {formatMinor(transaction.totalAmountMinor, transaction.postings[0]?.currency || 'USD', settings.currencyFormat, settings.zeroStyle)}
             </div>
           </div>
@@ -141,10 +141,10 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
             background: 'var(--acc-hold-bg)',
             border: '1px solid var(--acc-hold-border)',
             borderRadius: '2px',
-            padding: '8px 10px',
+            padding: '16px 18px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '10px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--acc-hold)', fontWeight: 600, fontSize: '11px' }}>
               <AlertCircle size={13} strokeWidth={1.5} />
@@ -154,12 +154,12 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
               Funds are reserved in escrow pending capture or release:
             </p>
 
-            <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
               <button
                 className="btn btn-settle"
                 onClick={handleSettle}
                 disabled={isSettling || isVoiding}
-                style={{ flex: 1, height: '26px', fontSize: '10px' }}
+                style={{ flex: 1, height: '36px', padding: '10px 16px', fontSize: '12px' }}
               >
                 <CheckCircle2 size={11} strokeWidth={1.5} />
                 <span>{isSettling ? 'Settling...' : 'Settle (Capture)'}</span>
@@ -169,7 +169,7 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
                 className="btn btn-void"
                 onClick={handleVoid}
                 disabled={isSettling || isVoiding}
-                style={{ flex: 1, height: '26px', fontSize: '10px' }}
+                style={{ flex: 1, height: '36px', padding: '10px 16px', fontSize: '12px' }}
               >
                 <X size={11} strokeWidth={1.5} />
                 <span>{isVoiding ? 'Voiding...' : 'Void (Release)'}</span>
@@ -201,13 +201,13 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
             </span>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <thead>
               <tr style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border-grid)', color: 'var(--text-muted)', textAlign: 'left', textTransform: 'uppercase' }}>
-                <th style={{ padding: '4px 8px' }}>Account</th>
-                <th style={{ padding: '4px 6px', textAlign: 'center', width: '35px' }}>Dir</th>
-                <th style={{ padding: '4px 8px', textAlign: 'right', width: '70px' }}>Debit (DR)</th>
-                <th style={{ padding: '4px 8px', textAlign: 'right', width: '70px' }}>Credit (CR)</th>
+                <th style={{ padding: '8px 12px' }}>Account</th>
+                <th style={{ padding: '8px 8px', textAlign: 'center', width: '45px' }}>Dir</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', width: '85px' }}>Debit (DR)</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', width: '85px' }}>Credit (CR)</th>
               </tr>
             </thead>
             <tbody>
@@ -216,7 +216,7 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
 
                 return (
                   <tr key={leg.id} style={{ borderBottom: '1px solid var(--border-grid)' }}>
-                    <td style={{ padding: '4px 8px' }}>
+                    <td style={{ padding: '8px 12px', height: '36px' }}>
                       <div className="font-mono" style={{ fontWeight: 600, color: 'var(--text-main)' }}>
                         {leg.accountNumber}
                       </div>
@@ -224,20 +224,22 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
                         {leg.accountId.slice(0, 8)}..
                       </div>
                     </td>
-                    <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                    <td style={{ padding: '8px 8px', textAlign: 'center', height: '36px' }}>
                       <span className={`badge-dir badge-dir-${isDebit ? 'dr' : 'cr'}`}>
                         {isDebit ? 'DR' : 'CR'}
                       </span>
                     </td>
                     <td className="tabular-nums font-mono text-right" style={{
-                      padding: '4px 8px',
+                      padding: '8px 12px',
+                      height: '36px',
                       color: isDebit ? 'var(--acc-debit)' : 'transparent',
                       fontWeight: 600,
                     }}>
                       {isDebit ? formatMinor(leg.amountMinor, leg.currency, settings.currencyFormat, settings.zeroStyle) : '-'}
                     </td>
                     <td className="tabular-nums font-mono text-right" style={{
-                      padding: '4px 8px',
+                      padding: '8px 12px',
+                      height: '36px',
                       color: !isDebit ? 'var(--acc-credit)' : 'transparent',
                       fontWeight: 600,
                     }}>
@@ -277,10 +279,10 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
           background: 'var(--bg-canvas)',
           border: '1px solid var(--border-grid)',
           borderRadius: '2px',
-          padding: '8px 10px',
+          padding: '16px 18px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
+          gap: '12px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--border-accent)', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase' }}>
             <ShieldCheck size={12} strokeWidth={1.5} />

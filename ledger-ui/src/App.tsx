@@ -396,7 +396,7 @@ export const App: React.FC = () => {
         overflow: 'hidden',
         position: 'relative',
       }}>
-        {/* Left Pane (290px): Chart of Accounts Tree */}
+        {/* Left Pane (320px): Chart of Accounts Tree */}
         <AccountsPane
           accounts={accounts}
           selectedAccountId={selectedAccountId}
@@ -414,7 +414,7 @@ export const App: React.FC = () => {
           onClearAccountFilter={() => setSelectedAccountId(null)}
         />
 
-        {/* Right Split-Pane (380px): Double-Entry Voucher & Cryptographic Inspector */}
+        {/* Right Split-Pane (440px): Double-Entry Voucher & Cryptographic Inspector */}
         {selectedTransaction && (
           <AuditInspectorDrawer
             transaction={selectedTransaction}
@@ -429,14 +429,14 @@ export const App: React.FC = () => {
 
       {/* Row 3: Institutional Bottom Status Bar (24px) */}
       <footer style={{
-        height: '24px',
+        height: '32px',
         background: 'var(--bg-elevated)',
         borderTop: '1px solid var(--border-grid)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 10px',
-        fontSize: '10px',
+        padding: '0 24px',
+        fontSize: '11px',
         color: 'var(--text-muted)',
         fontFamily: 'var(--font-mono)',
         flexShrink: 0,
@@ -444,7 +444,7 @@ export const App: React.FC = () => {
         zIndex: 5,
       }}>
         {/* Keyboard shortcut guide */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span><kbd>↑/↓</kbd> Navigate</span>
           <span><kbd>N</kbd> New Entry</span>
           <span><kbd>B</kbd> Burst</span>
@@ -455,7 +455,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Storage engine info & audit status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span>
             STORAGE: {isJava ? 'PostgreSQL/H2 + WAL (/data/ledger.wal)' : 'Web Crypto Local SHA-256 Kernel'}
           </span>
@@ -470,8 +470,8 @@ export const App: React.FC = () => {
       {toastMessage && (
         <div style={{
           position: 'fixed',
-          bottom: '32px',
-          right: '16px',
+          bottom: '40px',
+          right: '24px',
           background: 'var(--bg-panel)',
           border: `1px solid ${
             toastMessage.type === 'burst'
@@ -481,7 +481,7 @@ export const App: React.FC = () => {
                 : 'var(--acc-credit)'
           }`,
           borderRadius: '2px',
-          padding: '8px 12px',
+          padding: '12px 16px',
           boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
           display: 'flex',
           alignItems: 'center',
