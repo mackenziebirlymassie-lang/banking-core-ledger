@@ -116,7 +116,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           throw new Error('Hold amount must be strictly greater than $0.00');
         }
         if (sourceAccountId === destAccountId) {
-          throw new Error('Source and escrow/destination accounts must be distinct');
+          throw new Error('Source and destination accounts must be distinct');
         }
 
         const res = await ledgerClient.authorizeHold({
@@ -130,7 +130,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         onTransferSuccess(res.transaction);
       } else if (mode === 'MULTI_LEG') {
         if (!balanceInfo.isBalanced) {
-          throw new Error(`Double-entry invariant violated: Discrepancy of ${balanceInfo.diffFormatted}. Debits must exactly equal Credits.`);
+          throw new Error(`Double-entry invariant violated: Discrepancy of ${balanceInfo.diffFormatted}. Debits must equal Credits.`);
         }
 
         const legPayloads: PostingLegPayload[] = legs.map(l => ({
@@ -156,27 +156,27 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '640px' }}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '620px' }}>
 
         {/* Modal Header */}
         <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ArrowRightLeft size={16} style={{ color: '#38bdf8' }} />
-            <span style={{ fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ArrowRightLeft size={13} strokeWidth={1.5} style={{ color: 'var(--border-accent)' }} />
+            <span className="font-mono" style={{ fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-main)' }}>
               Double-Entry Transfer & Hold Builder
             </span>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-            <X size={16} />
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <X size={14} strokeWidth={1.5} />
           </button>
         </div>
 
         {/* Mode Switcher */}
         <div style={{
           display: 'flex',
-          borderBottom: '1px solid var(--border-subtle)',
-          background: 'var(--bg-app)',
-          padding: '0 20px',
+          borderBottom: '1px solid var(--border-grid)',
+          background: 'var(--bg-canvas)',
+          padding: '0 14px',
         }}>
           {(['SIMPLE', 'MULTI_LEG', 'HOLD'] as const).map(m => (
             <button
@@ -185,9 +185,9 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               style={{
                 background: 'none',
                 border: 'none',
-                borderBottom: `2px solid ${mode === m ? '#38bdf8' : 'transparent'}`,
-                padding: '10px 14px',
-                color: mode === m ? '#38bdf8' : 'var(--text-muted)',
+                borderBottom: `2px solid ${mode === m ? 'var(--border-accent)' : 'transparent'}`,
+                padding: '8px 12px',
+                color: mode === m ? 'var(--border-accent)' : 'var(--text-muted)',
                 fontWeight: 600,
                 fontSize: '11px',
                 cursor: 'pointer',
@@ -204,34 +204,32 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         {/* Modal Body */}
         <div className="modal-body">
 
-          {/* Idempotency Key Bar with Replay Demo */}
+          {/* Idempotency Key Bar */}
           <div style={{
-            background: 'var(--bg-app)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '6px',
-            padding: '10px 12px',
+            background: 'var(--bg-canvas)',
+            border: '1px solid var(--border-grid)',
+            borderRadius: '2px',
+            padding: '8px 10px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '5px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Shield size={13} style={{ color: '#38bdf8' }} />
-                <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Shield size={12} strokeWidth={1.5} style={{ color: 'var(--border-accent)' }} />
+                <span style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                   Idempotency-Key Header
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  type="button"
-                  onClick={handleRegenerateKey}
-                  className="btn btn-secondary"
-                  style={{ padding: '2px 6px', fontSize: '10px', height: '22px', gap: '4px' }}
-                  title="Generate a fresh random UUID key"
-                >
-                  <RefreshCw size={10} /> New Key
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleRegenerateKey}
+                className="btn btn-secondary"
+                style={{ padding: '1px 5px', fontSize: '9px', height: '20px', gap: '3px' }}
+                title="Generate fresh UUID"
+              >
+                <RefreshCw size={9} strokeWidth={1.5} /> New Key
+              </button>
             </div>
 
             <input
@@ -239,7 +237,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               value={idempotencyKey}
               onChange={e => setIdempotencyKey(e.target.value)}
               className="input font-mono tabular-nums"
-              style={{ fontSize: '11px', color: '#7dd3fc' }}
+              style={{ fontSize: '10px', color: 'var(--border-accent)' }}
               placeholder="e.g. transfer-req-849202"
             />
           </div>
@@ -247,17 +245,17 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           {/* Error Message */}
           {errorMessage && (
             <div style={{
-              background: 'rgba(244, 63, 94, 0.12)',
-              border: '1px solid rgba(244, 63, 94, 0.4)',
-              borderRadius: '6px',
-              padding: '10px 12px',
-              color: '#fb7185',
-              fontSize: '12px',
+              background: 'var(--acc-debit-bg)',
+              border: '1px solid var(--acc-debit-border)',
+              borderRadius: '2px',
+              padding: '8px 10px',
+              color: 'var(--acc-debit)',
+              fontSize: '11px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
             }}>
-              <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+              <AlertTriangle size={13} strokeWidth={1.5} style={{ flexShrink: 0 }} />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -265,34 +263,34 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           {/* Result Banner with HTTP 201 Created vs 200 OK Replay */}
           {lastResult && (
             <div style={{
-              background: lastResult.status === 200 ? 'rgba(56, 189, 248, 0.12)' : 'rgba(16, 185, 129, 0.12)',
-              border: `1px solid ${lastResult.status === 200 ? 'rgba(56, 189, 248, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
-              borderRadius: '6px',
-              padding: '10px 12px',
+              background: lastResult.status === 200 ? 'rgba(56, 189, 248, 0.1)' : 'var(--acc-credit-bg)',
+              border: `1px solid ${lastResult.status === 200 ? 'rgba(56, 189, 248, 0.3)' : 'var(--acc-credit-border)'}`,
+              borderRadius: '2px',
+              padding: '8px 10px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px',
+              gap: '3px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CheckCircle2 size={14} style={{ color: lastResult.status === 200 ? '#38bdf8' : '#34d399' }} />
-                  <span style={{ fontWeight: 700, fontSize: '12px', color: lastResult.status === 200 ? '#38bdf8' : '#34d399' }}>
-                    {lastResult.status === 200 ? 'HTTP 200 OK — Idempotent Replay (No Double Spend)' : 'HTTP 201 Created — Committed Double-Entry'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <CheckCircle2 size={13} strokeWidth={1.5} style={{ color: lastResult.status === 200 ? 'var(--border-accent)' : 'var(--acc-credit)' }} />
+                  <span style={{ fontWeight: 600, fontSize: '11px', color: lastResult.status === 200 ? 'var(--border-accent)' : 'var(--acc-credit)', fontFamily: 'var(--font-mono)' }}>
+                    {lastResult.status === 200 ? 'HTTP 200 OK — Idempotent Replay' : 'HTTP 201 Created — Committed Double-Entry'}
                   </span>
                 </div>
                 <span className="badge badge-verified">
                   Seq #{lastResult.tx.sequenceNum}
                 </span>
               </div>
-              <div className="font-mono tabular-nums" style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                Hash: {lastResult.tx.hash.slice(0, 16)}... | Amount: {formatMinor(lastResult.tx.totalAmountMinor)}
+              <div className="font-mono tabular-nums" style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
+                Hash: {lastResult.tx.hash.slice(0, 16)}... | Total: {formatMinor(lastResult.tx.totalAmountMinor)}
               </div>
             </div>
           )}
 
           {/* Description */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
               Description
             </label>
             <input
@@ -306,10 +304,10 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
           {/* Mode 1 & 3: Simple Transfer or Hold */}
           {(mode === 'SIMPLE' || mode === 'HOLD') && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
                     {mode === 'HOLD' ? 'Source Account (Payer)' : 'Source Account'}
                   </label>
                   <select
@@ -325,8 +323,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   </select>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
                     {mode === 'HOLD' ? 'Escrow / Destination' : 'Destination Account'}
                   </label>
                   <select
@@ -343,8 +341,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
                   Amount ($ USD)
                 </label>
                 <input
@@ -353,7 +351,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   onChange={e => setAmountStr(e.target.value)}
                   className="input font-mono tabular-nums"
                   placeholder="150.00"
-                  style={{ fontSize: '13px', fontWeight: 600 }}
+                  style={{ fontSize: '12px', fontWeight: 600 }}
                 />
               </div>
             </div>
@@ -361,18 +359,18 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
           {/* Mode 2: Multi-Leg Dynamic Builder */}
           {mode === 'MULTI_LEG' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
-                  Posting Legs (Must balance to $0.00)
+                <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  Posting Legs (Must Balance to $0.00)
                 </span>
                 <button
                   type="button"
                   onClick={handleAddLeg}
                   className="btn btn-secondary"
-                  style={{ padding: '2px 8px', fontSize: '10px', height: '22px', gap: '4px' }}
+                  style={{ padding: '1px 6px', fontSize: '9px', height: '20px', gap: '3px' }}
                 >
-                  <Plus size={10} /> Add Leg
+                  <Plus size={9} strokeWidth={1.5} /> Add Leg
                 </button>
               </div>
 
@@ -381,13 +379,13 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   key={leg.id}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '85px 1fr 110px 30px',
-                    gap: '8px',
+                    gridTemplateColumns: '75px 1fr 100px 24px',
+                    gap: '6px',
                     alignItems: 'center',
-                    background: 'var(--bg-app)',
-                    padding: '6px 8px',
-                    borderRadius: '4px',
-                    border: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-canvas)',
+                    padding: '4px 6px',
+                    borderRadius: '2px',
+                    border: '1px solid var(--border-grid)',
                   }}
                 >
                   <select
@@ -395,8 +393,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                     onChange={e => handleLegChange(leg.id, 'direction', e.target.value)}
                     className="select font-mono"
                     style={{
-                      fontSize: '11px',
-                      color: leg.direction === 'DEBIT' ? '#fb7185' : '#34d399',
+                      fontSize: '10px',
+                      color: leg.direction === 'DEBIT' ? 'var(--acc-debit)' : 'var(--acc-credit)',
                       fontWeight: 600,
                     }}
                   >
@@ -408,7 +406,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                     value={leg.accountId}
                     onChange={e => handleLegChange(leg.id, 'accountId', e.target.value)}
                     className="select font-mono"
-                    style={{ fontSize: '11px' }}
+                    style={{ fontSize: '10px' }}
                   >
                     {accounts.map(acc => (
                       <option key={acc.id} value={acc.id}>
@@ -422,7 +420,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                     value={leg.amountStr}
                     onChange={e => handleLegChange(leg.id, 'amountStr', e.target.value)}
                     className="input font-mono tabular-nums text-right"
-                    style={{ fontSize: '11px', fontWeight: 600 }}
+                    style={{ fontSize: '10px', fontWeight: 600 }}
                     placeholder="0.00"
                   />
 
@@ -430,9 +428,9 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveLeg(leg.id)}
-                      style={{ background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: 0 }}
+                      style={{ background: 'none', border: 'none', color: 'var(--acc-debit)', cursor: 'pointer', padding: 0 }}
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={11} strokeWidth={1.5} />
                     </button>
                   ) : <div />}
                 </div>
@@ -440,27 +438,27 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
               {/* Invariant Bar */}
               <div style={{
-                background: balanceInfo.isBalanced ? 'rgba(16, 185, 129, 0.08)' : 'rgba(244, 63, 94, 0.12)',
-                border: `1px solid ${balanceInfo.isBalanced ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.4)'}`,
-                borderRadius: '4px',
-                padding: '8px 12px',
+                background: balanceInfo.isBalanced ? 'var(--acc-credit-bg)' : 'var(--acc-debit-bg)',
+                border: `1px solid ${balanceInfo.isBalanced ? 'var(--acc-credit-border)' : 'var(--acc-debit-border)'}`,
+                borderRadius: '2px',
+                padding: '6px 10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
               }}>
-                <div style={{ display: 'flex', gap: '14px', fontSize: '11px' }}>
+                <div style={{ display: 'flex', gap: '10px', fontSize: '10px' }}>
                   <span className="tabular-nums font-mono">
-                    Debits: <strong style={{ color: '#fb7185' }}>{balanceInfo.totalDebitsFormatted}</strong>
+                    DR: <strong style={{ color: 'var(--acc-debit)' }}>{balanceInfo.totalDebitsFormatted}</strong>
                   </span>
                   <span className="tabular-nums font-mono">
-                    Credits: <strong style={{ color: '#34d399' }}>{balanceInfo.totalCreditsFormatted}</strong>
+                    CR: <strong style={{ color: 'var(--acc-credit)' }}>{balanceInfo.totalCreditsFormatted}</strong>
                   </span>
                 </div>
 
                 <span className="tabular-nums font-mono" style={{
-                  fontSize: '11px',
+                  fontSize: '10px',
                   fontWeight: 700,
-                  color: balanceInfo.isBalanced ? '#34d399' : '#fb7185',
+                  color: balanceInfo.isBalanced ? 'var(--acc-credit)' : 'var(--acc-debit)',
                 }}>
                   {balanceInfo.isBalanced ? 'BALANCED ($0.00) ✓' : `IMBALANCE: ${balanceInfo.diffFormatted} ✗`}
                 </span>
@@ -472,7 +470,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
         {/* Modal Footer */}
         <div className="modal-footer">
-          {/* Replay Demonstration button */}
           <button
             type="button"
             className="btn btn-secondary"
@@ -480,8 +477,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             disabled={isSubmitting}
             title="Send the exact same idempotency key to test deduplication"
           >
-            <Repeat size={12} />
-            Replay Same Idempotency Key
+            <Repeat size={11} strokeWidth={1.5} />
+            <span>Replay Key Test</span>
           </button>
 
           <button
@@ -500,10 +497,10 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           >
             {isSubmitting ? (
               <>
-                <RefreshCw size={12} className="animate-spin" />
-                Committing...
+                <RefreshCw size={11} strokeWidth={1.5} className="animate-spin" />
+                <span>Committing...</span>
               </>
-            ) : mode === 'HOLD' ? 'Authorize Two-Phase Hold' : 'Commit Transfer'}
+            ) : mode === 'HOLD' ? 'Authorize Hold' : 'Commit Transfer'}
           </button>
         </div>
 

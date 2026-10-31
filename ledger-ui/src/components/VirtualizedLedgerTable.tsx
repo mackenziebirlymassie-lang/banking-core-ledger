@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Search,
@@ -6,6 +6,10 @@ import {
 } from 'lucide-react';
 import type { Transaction, TransferStatus } from '../types/ledger';
 import { formatMinor } from '../utils/money';
+
+export interface VirtualizedLedgerTableHandle {
+  focusSearch: () => void;
+}
 
 interface VirtualizedLedgerTableProps {
   transactions: Transaction[];
@@ -15,36 +19,45 @@ interface VirtualizedLedgerTableProps {
   onClearAccountFilter: () => void;
 }
 
-function formatTimestamp(isoString: string): string {
+function formatUtcTime(isoString: string): string {
   if (!isoString) return '';
   try {
     const d = new Date(isoString);
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    const seconds = String(d.getSeconds()).padStart(2, '0');
-    const ms = String(d.getMilliseconds()).padStart(3, '0');
-    return `${hours}:${minutes}:${seconds}.${ms}`;
+    const h = String(d.getUTCHours()).padStart(2, '0');
+    const m = String(d.getUTCMinutes()).padStart(2, '0');
+    const s = String(d.getUTCSeconds()).padStart(2, '0');
+    const ms = String(d.getUTCMilliseconds()).padStart(3, '0');
+    return `${h}:${m}:${s}.${ms}`;
   } catch {
     return isoString;
   }
 }
 
-export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
+export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, VirtualizedLedgerTableProps>(({
   transactions,
   selectedTransactionId,
   onSelectTransaction,
   filteredAccountId,
   onClearAccountFilter,
-}) => {
+}, ref) => {
   const parentRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | TransferStatus>('ALL');
+
+  useImperativeHandle(ref, () => ({
+    focusSearch: () => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    },
+  }));
+
   const handleCopy = (e: React.MouseEvent, text: string) => {
     e.stopPropagation();
     navigator.clipboard.writeText(text);
   };
 
-  // High-performance filter without dropping frames
+  // High-performance filter
   const filtered = useMemo(() => {
     let result = transactions;
 
@@ -73,12 +86,12 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
     return result;
   }, [transactions, filteredAccountId, statusFilter, searchTerm]);
 
-  // Viewport Virtualization
+  // Viewport Virtualization with 30px row height
   const rowVirtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 38,
-    overscan: 20,
+    estimateSize: () => 30,
+    overscan: 25,
   });
 
   return (
@@ -87,37 +100,39 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      background: 'var(--bg-app)',
+      background: 'var(--bg-canvas)',
       overflow: 'hidden',
     }}>
-      {/* Table Control & Filter Header */}
+      {/* 34px Table Control & Filter Header */}
       <div style={{
-        padding: '10px 16px',
-        borderBottom: '1px solid var(--border-subtle)',
-        background: 'var(--bg-secondary)',
+        height: '34px',
+        padding: '0 10px',
+        borderBottom: '1px solid var(--border-grid)',
+        background: 'var(--bg-elevated)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '12px',
+        gap: '8px',
         flexShrink: 0,
       }}>
-        {/* Search & Status Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+        {/* Search & Filters */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            background: 'var(--bg-app)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '4px',
-            padding: '5px 10px',
-            maxWidth: '380px',
+            gap: '6px',
+            background: 'var(--bg-canvas)',
+            border: '1px solid var(--border-grid)',
+            borderRadius: '2px',
+            padding: '2px 6px',
+            maxWidth: '320px',
             width: '100%',
           }}>
-            <Search size={13} style={{ color: 'var(--text-dim)' }} />
+            <Search size={11} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="Filter by description, UUID, idempotency key, SHA-256 hash..."
+              placeholder="Search journal (/)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
@@ -125,67 +140,78 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
                 border: 'none',
                 outline: 'none',
                 color: 'var(--text-main)',
-                fontSize: '12px',
+                fontSize: '11px',
                 width: '100%',
+                fontFamily: 'var(--font-mono)',
               }}
             />
-            {searchTerm && (
+            {searchTerm ? (
               <button
                 onClick={() => setSearchTerm('')}
-                style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
               >
-                <X size={12} />
+                <X size={11} strokeWidth={1.5} />
               </button>
+            ) : (
+              <kbd>/</kbd>
             )}
           </div>
 
-          {/* Status Filter Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {/* Status Segment Tabs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
             {(['ALL', 'POSTED', 'PENDING', 'VOIDED'] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`btn ${statusFilter === status ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '3px 8px', fontSize: '11px', height: '26px' }}
+                className="btn"
+                style={{
+                  padding: '1px 6px',
+                  fontSize: '10px',
+                  height: '22px',
+                  fontFamily: 'var(--font-mono)',
+                  background: statusFilter === status ? 'var(--bg-selected)' : 'transparent',
+                  borderColor: statusFilter === status ? 'var(--border-strong)' : 'transparent',
+                  color: statusFilter === status ? '#38bdf8' : 'var(--text-muted)',
+                }}
               >
                 {status}
               </button>
             ))}
           </div>
 
-          {/* Active Account Filter Chip */}
+          {/* Filtered by Account Chip */}
           {filteredAccountId && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '3px 8px',
+              gap: '4px',
+              padding: '1px 6px',
               background: 'rgba(56, 189, 248, 0.1)',
               border: '1px solid rgba(56, 189, 248, 0.3)',
-              borderRadius: '4px',
-              color: '#38bdf8',
-              fontSize: '11px',
+              borderRadius: '2px',
+              color: 'var(--border-accent)',
+              fontSize: '10px',
               fontFamily: 'var(--font-mono)'
             }}>
-              <span>Filtered by Account</span>
+              <span>Filtered Account</span>
               <button
                 onClick={onClearAccountFilter}
-                style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'none', border: 'none', color: 'var(--border-accent)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
-                <X size={12} />
+                <X size={10} strokeWidth={1.5} />
               </button>
             </div>
           )}
         </div>
 
-        {/* Real-time stats */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', color: 'var(--text-muted)' }}>
-          <span className="tabular-nums font-mono">
-            {filtered.length.toLocaleString()} of {transactions.length.toLocaleString()} rows
+        {/* Row count stats */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+          <span className="tabular-nums">
+            {filtered.length} of {transactions.length} ROWS
           </span>
-          <span style={{ color: 'var(--border-strong)' }}>|</span>
-          <span style={{ color: '#34d399', fontSize: '10px', fontWeight: 600 }}>
-            60 FPS VIRTUALIZED
+          <span style={{ color: 'var(--border-grid)' }}>|</span>
+          <span style={{ color: 'var(--text-secondary)' }}>
+            VIRTUALIZED (60 FPS)
           </span>
         </div>
       </div>
@@ -193,26 +219,28 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
       {/* Fixed Grid Header with 100% pixel-aligned columns */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '65px 110px 85px 1fr 130px 110px 130px 110px',
-        background: '#0a101f',
-        borderBottom: '1px solid var(--border-subtle)',
-        fontSize: '11px',
+        gridTemplateColumns: '55px 95px 75px 1fr 60px 115px 125px 85px',
+        background: 'var(--bg-panel)',
+        borderBottom: '1px solid var(--border-grid)',
+        fontSize: '10px',
         fontWeight: 600,
-        color: 'var(--text-dim)',
+        color: 'var(--text-muted)',
         textTransform: 'uppercase',
         letterSpacing: '0.04em',
-        padding: '8px 16px',
+        padding: '0 8px',
+        height: '26px',
+        alignItems: 'center',
         flexShrink: 0,
         userSelect: 'none',
       }}>
-        <div className="tabular-nums text-right" style={{ paddingRight: '8px' }}>Seq #</div>
-        <div className="tabular-nums text-left font-mono">Timestamp</div>
-        <div className="text-center">Status</div>
-        <div className="text-left" style={{ paddingLeft: '8px' }}>Description & Legs</div>
-        <div className="tabular-nums text-right font-mono" style={{ paddingRight: '12px' }}>Amount</div>
-        <div className="text-left font-mono">Tx UUID</div>
-        <div className="text-left font-mono">Idempotency Key</div>
-        <div className="text-left font-mono">SHA-256 Hash</div>
+        <div className="tabular-nums text-right" style={{ paddingRight: '6px' }}>SEQ #</div>
+        <div className="text-left font-mono">UTC TIME</div>
+        <div className="text-center">STATUS</div>
+        <div className="text-left" style={{ paddingLeft: '6px' }}>DESCRIPTION</div>
+        <div className="text-center font-mono">LEGS</div>
+        <div className="tabular-nums text-right font-mono" style={{ paddingRight: '8px' }}>AMOUNT</div>
+        <div className="text-left font-mono">IDEMPOTENCY / ID</div>
+        <div className="text-left font-mono">SHA-256</div>
       </div>
 
       {/* Virtualized Table Scroll Container */}
@@ -226,16 +254,18 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
       >
         {filtered.length === 0 ? (
           <div style={{
-            height: '240px',
+            height: '180px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '8px',
-            color: 'var(--text-dim)',
+            gap: '6px',
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
           }}>
-            <Search size={24} style={{ opacity: 0.4 }} />
-            <span>No transactions match the selected filter criteria</span>
+            <Search size={18} strokeWidth={1.5} style={{ opacity: 0.3 }} />
+            <span>No journal entries match the filter criteria</span>
           </div>
         ) : (
           <div
@@ -261,44 +291,46 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                     display: 'grid',
-                    gridTemplateColumns: '65px 110px 85px 1fr 130px 110px 130px 110px',
+                    gridTemplateColumns: '55px 95px 75px 1fr 60px 115px 125px 85px',
                     alignItems: 'center',
-                    padding: '0 16px',
-                    borderBottom: '1px solid var(--border-subtle)',
+                    padding: '0 8px',
+                    borderBottom: '1px solid var(--border-grid)',
+                    borderLeft: isSelected ? '2px solid var(--border-accent)' : '2px solid transparent',
                     background: isSelected
-                      ? 'var(--bg-card-hover)'
+                      ? 'var(--bg-selected)'
                       : virtualRow.index % 2 === 0
-                        ? 'var(--bg-app)'
-                        : 'rgba(15, 23, 42, 0.4)',
+                        ? 'var(--bg-canvas)'
+                        : 'var(--bg-panel)',
                     cursor: 'pointer',
-                    transition: 'background 0.1s ease',
+                    userSelect: 'none',
+                    transition: 'background 0.05s ease',
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = '#121b2f';
+                    if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)';
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) {
                       e.currentTarget.style.background =
-                        virtualRow.index % 2 === 0 ? 'var(--bg-app)' : 'rgba(15, 23, 42, 0.4)';
+                        virtualRow.index % 2 === 0 ? 'var(--bg-canvas)' : 'var(--bg-panel)';
                     }
                   }}
                 >
                   {/* Sequence # */}
                   <div className="tabular-nums font-mono text-right" style={{
-                    color: '#94a3b8',
+                    color: isSelected ? 'var(--border-accent)' : 'var(--text-secondary)',
                     fontWeight: 600,
                     fontSize: '11px',
-                    paddingRight: '8px',
+                    paddingRight: '6px',
                   }}>
                     #{tx.sequenceNum}
                   </div>
 
-                  {/* Timestamp */}
+                  {/* UTC Timestamp */}
                   <div className="tabular-nums font-mono text-left" style={{
-                    fontSize: '11px',
+                    fontSize: '10px',
                     color: 'var(--text-muted)',
                   }} title={tx.postedAt}>
-                    {formatTimestamp(tx.postedAt)}
+                    {formatUtcTime(tx.postedAt)}
                   </div>
 
                   {/* Status Badge */}
@@ -308,56 +340,42 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
                     </span>
                   </div>
 
-                  {/* Description & Multi-leg indicator */}
+                  {/* Description */}
                   <div style={{
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    paddingLeft: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
+                    paddingLeft: '6px',
+                    color: 'var(--text-main)',
+                    fontSize: '11px',
+                    fontWeight: 500,
                   }}>
-                    <span style={{ color: '#f1f5f9', fontWeight: 500, fontSize: '12px' }}>
-                      {tx.description}
-                    </span>
-                    <span className="badge-currency font-mono" style={{ fontSize: '9px' }}>
-                      {tx.postings.length} legs
-                    </span>
+                    {tx.description}
+                  </div>
+
+                  {/* Legs count */}
+                  <div className="text-center font-mono tabular-nums" style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                    {tx.postings.length}
                   </div>
 
                   {/* Amount (Strict Tabular Digits) */}
                   <div className="tabular-nums font-mono text-right" style={{
-                    fontWeight: 700,
-                    fontSize: '12px',
-                    color: tx.status === 'VOIDED' ? '#94a3b8' : '#f8fafc',
-                    paddingRight: '12px',
+                    fontWeight: 600,
+                    fontSize: '11px',
+                    color: tx.status === 'VOIDED' ? 'var(--text-muted)' : 'var(--text-main)',
+                    paddingRight: '8px',
                   }}>
                     {formatMinor(tx.totalAmountMinor)}
                   </div>
 
-                  {/* Transaction UUID */}
+                  {/* Idempotency Key / UUID */}
                   <div style={{ overflow: 'hidden' }}>
                     <span
                       className="hash-badge"
-                      onClick={(e) => handleCopy(e, tx.id)}
-                      title={`Click to copy UUID: ${tx.id}`}
-                    >
-                      {tx.id.slice(0, 8)}...
-                    </span>
-                  </div>
-
-                  {/* Idempotency Key */}
-                  <div style={{ overflow: 'hidden' }}>
-                    <span
-                      className="hash-badge"
-                      style={{ color: '#cbd5e1' }}
                       onClick={(e) => handleCopy(e, tx.idempotencyKey)}
-                      title={`Click to copy Idempotency Key: ${tx.idempotencyKey}`}
+                      title={`Idempotency: ${tx.idempotencyKey}\nUUID: ${tx.id}`}
                     >
-                      {tx.idempotencyKey.length > 14
-                        ? `${tx.idempotencyKey.slice(0, 12)}..`
-                        : tx.idempotencyKey}
+                      {tx.idempotencyKey.slice(0, 10)}..
                     </span>
                   </div>
 
@@ -365,9 +383,9 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
                   <div style={{ overflow: 'hidden' }}>
                     <span
                       className="hash-badge"
-                      style={{ color: '#38bdf8' }}
+                      style={{ color: 'var(--border-accent)' }}
                       onClick={(e) => handleCopy(e, tx.hash)}
-                      title={`SHA-256 Hash: ${tx.hash}`}
+                      title={`SHA-256: ${tx.hash}`}
                     >
                       {tx.hash.slice(0, 8)}..
                     </span>
@@ -380,4 +398,4 @@ export const VirtualizedLedgerTable: React.FC<VirtualizedLedgerTableProps> = ({
       </div>
     </main>
   );
-};
+});

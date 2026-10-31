@@ -16,7 +16,12 @@ target/
 !release/*.jar
 *.war
 
-# Environment variables & secrets
+# Runtime data & WAL
+data/
+release/data/
+*.wal
+*.mv.db
+*.trace.db
 .env
 .env.local
 .env.*.local

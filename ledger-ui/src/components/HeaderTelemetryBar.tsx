@@ -2,13 +2,12 @@ import React from 'react';
 import {
   ShieldCheck,
   Zap,
-  ArrowRightLeft,
-  CheckCircle2,
+  Plus,
   RefreshCw,
-  PlusCircle,
-  Database,
   Cpu,
-  RotateCcw
+  RotateCcw,
+  Building,
+  Check
 } from 'lucide-react';
 import type { Account, AuditReport } from '../types/ledger';
 import { formatMinor } from '../utils/money';
@@ -64,203 +63,177 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
 
   return (
     <header style={{
-      height: '56px',
-      background: 'var(--bg-secondary)',
-      borderBottom: '1px solid var(--border-subtle)',
+      height: '38px',
+      background: 'var(--bg-panel)',
+      borderBottom: '1px solid var(--border-grid)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 16px',
-      gap: '12px',
+      padding: '0 10px',
+      gap: '8px',
       flexShrink: 0,
       zIndex: 10,
+      userSelect: 'none',
     }}>
-      {/* Brand & Connection Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
+      {/* Brand & Connection & Engine Mode */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          paddingRight: '8px',
+          borderRight: '1px solid var(--border-grid)',
+        }}>
+          <span className="font-mono" style={{
             fontWeight: 700,
-            fontSize: '14px',
-            fontFamily: 'var(--font-mono)',
-            boxShadow: '0 0 10px rgba(2, 132, 199, 0.4)'
+            fontSize: '12px',
+            letterSpacing: '0.06em',
+            color: '#f8fafc',
           }}>
-            L
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '0.04em', textTransform: 'uppercase', color: '#f8fafc' }}>
-                Ledger Engine
-              </span>
-              <span style={{
-                fontSize: '10px',
-                padding: '1px 5px',
-                borderRadius: '3px',
-                background: '#1e293b',
-                color: '#38bdf8',
-                fontFamily: 'var(--font-mono)'
-              }}>
-                CORE-v1
-              </span>
-            </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '0.02em' }}>
-              TREASURY MISSION CONTROL
-            </div>
-          </div>
+            CORE//LEDGER
+          </span>
+          <span className="font-mono" style={{
+            fontSize: '10px',
+            color: isJava ? 'var(--border-accent)' : '#a78bfa',
+            background: 'var(--bg-canvas)',
+            padding: '1px 4px',
+            border: '1px solid var(--border-grid)',
+            borderRadius: '2px',
+          }}>
+            {isJava ? 'v2.1-WAL' : 'v2.1-KERNEL'}
+          </span>
         </div>
 
-        {/* Engine Mode Pill & Toggle */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '3px 8px',
-          background: isJava ? 'rgba(56, 189, 248, 0.1)' : 'rgba(168, 85, 247, 0.1)',
-          border: `1px solid ${isJava ? 'rgba(56, 189, 248, 0.3)' : 'rgba(168, 85, 247, 0.3)'}`,
-          borderRadius: '4px',
-          fontSize: '11px',
-          fontFamily: 'var(--font-mono)',
-          cursor: 'pointer',
-        }}
-        onClick={onToggleEngineMode}
-        title="Click to toggle between Java 21 Backend and Standalone Embedded Kernel"
+        {/* Engine Mode Toggle */}
+        <button
+          onClick={onToggleEngineMode}
+          className="btn btn-secondary"
+          style={{ height: '26px', padding: '0 7px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+          title="Toggle between Java 21 Backend and Standalone Embedded Kernel"
         >
-          <Cpu size={13} style={{ color: isJava ? '#38bdf8' : '#c084fc' }} />
-          <span style={{ color: isJava ? '#7dd3fc' : '#e9d5ff', fontWeight: 600 }}>
-            {isJava ? 'ENGINE: JAVA 21 + WAL (CONNECTED)' : 'ENGINE: STANDALONE KERNEL (LOCAL)'}
-          </span>
-          <span style={{ fontSize: '9px', color: 'var(--text-dim)', marginLeft: '4px' }}>
-            [SWITCH]
-          </span>
-        </div>
+          <Cpu size={12} strokeWidth={1.5} style={{ color: isJava ? 'var(--border-accent)' : '#a78bfa' }} />
+          <span>{isJava ? 'JAVA 21 + WAL' : 'STANDALONE KERNEL'}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '9px' }}>[SWITCH]</span>
+        </button>
 
-        {/* Live SSE Stream Indicator */}
+        {/* Live SSE Stream Telemetry */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          padding: '3px 8px',
-          background: 'var(--bg-app)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '4px',
-          fontSize: '11px',
-          fontFamily: 'var(--font-mono)'
+          gap: '5px',
+          padding: '2px 6px',
+          background: 'var(--bg-canvas)',
+          border: '1px solid var(--border-grid)',
+          borderRadius: '2px',
+          fontSize: '10px',
+          fontFamily: 'var(--font-mono)',
         }} title={`Telemetry Stream: ${connectionStatus}`}>
-          <div className={`pulse-dot ${connectionStatus.toLowerCase()}`} />
-          <span style={{ color: connectionStatus === 'CONNECTED' ? '#34d399' : '#fb7185', fontWeight: 600 }}>
+          <div className={`dot-indicator ${connectionStatus.toLowerCase()}`} />
+          <span style={{
+            color: connectionStatus === 'CONNECTED' ? '#10b981' : connectionStatus === 'CONNECTING' ? '#f59e0b' : '#f43f5e',
+            fontWeight: 600,
+          }}>
             {connectionStatus}
           </span>
         </div>
       </div>
 
       {/* Global Invariant & Cryptographic Chain Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {/* Invariant Status: Sum(Debits) == Sum(Credits) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Global Invariant: ∑ DR == ∑ CR */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          padding: '4px 10px',
-          background: isGlobalBalanced ? 'rgba(16, 185, 129, 0.08)' : 'rgba(244, 63, 94, 0.12)',
-          border: `1px solid ${isGlobalBalanced ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.4)'}`,
-          borderRadius: '4px',
-        }}>
-          <Database size={13} style={{ color: isGlobalBalanced ? '#10b981' : '#f43f5e' }} />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600 }}>
-              Global Invariant
-            </span>
-            <span className="tabular-nums font-mono" style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              color: isGlobalBalanced ? '#34d399' : '#fb7185'
-            }}>
-              {isGlobalBalanced ? `∑ Debits == ∑ Credits (${formatMinor(totalDebits)})` : `IMBALANCE: ${formatMinor(discrepancy)}`}
-            </span>
-          </div>
+          gap: '6px',
+          padding: '2px 8px',
+          background: isGlobalBalanced ? 'var(--acc-credit-bg)' : 'var(--acc-debit-bg)',
+          border: `1px solid ${isGlobalBalanced ? 'var(--acc-credit-border)' : 'var(--acc-debit-border)'}`,
+          borderRadius: '2px',
+        }} title="System-wide Double-Entry Balancing Invariant">
+          <span className="font-mono tabular-nums" style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            color: isGlobalBalanced ? 'var(--acc-credit)' : 'var(--acc-debit)',
+          }}>
+            {isGlobalBalanced ? `∑ DR = ∑ CR (${formatMinor(totalDebits)})` : `IMBALANCE: ${formatMinor(discrepancy)}`}
+          </span>
         </div>
 
-        {/* SHA-256 Chain Status Pill */}
+        {/* Merkle Root & Chain Length */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          padding: '4px 10px',
-          background: 'var(--bg-app)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '4px',
+          gap: '6px',
+          padding: '2px 8px',
+          background: 'var(--bg-canvas)',
+          border: '1px solid var(--border-grid)',
+          borderRadius: '2px',
+          fontSize: '11px',
+          fontFamily: 'var(--font-mono)',
         }}>
-          <ShieldCheck size={14} style={{ color: '#38bdf8' }} />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>
-                SHA-256 Chain
-              </span>
-              <span className="tabular-nums font-mono" style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                [{totalTransactions} txs]
-              </span>
-            </div>
-            <div className="font-mono tabular-nums" style={{ fontSize: '10px', color: '#7dd3fc' }}>
-              {latestTxHash ? `${latestTxHash.slice(0, 10)}...${latestTxHash.slice(-6)}` : 'GENESIS'}
-            </div>
-          </div>
+          <span style={{ color: 'var(--text-muted)' }}>CHAIN:</span>
+          <span className="tabular-nums" style={{ color: 'var(--text-main)', fontWeight: 600 }}>
+            {totalTransactions} BLOCKS
+          </span>
+          <span style={{ color: 'var(--border-strong)' }}>|</span>
+          <span className="tabular-nums" style={{ color: 'var(--text-code)' }}>
+            {latestTxHash ? `${latestTxHash.slice(0, 8)}..${latestTxHash.slice(-4)}` : 'GENESIS'}
+          </span>
         </div>
 
-        {/* Verify Audit Chain Button */}
+        {/* Audit Chain Verify Button */}
         <button
           className="btn btn-secondary"
           onClick={onVerifyAudit}
           disabled={isVerifyingAudit}
-          style={{ height: '30px', fontSize: '11px' }}
-          title="Verify full SHA-256 chain and Merkle root against binary WAL"
+          style={{ height: '26px', fontSize: '11px' }}
+          title="Verify full SHA-256 chain and Merkle root against binary WAL (Hotkey: V)"
         >
           {isVerifyingAudit ? (
             <>
-              <RefreshCw size={12} className="animate-spin" />
-              Verifying...
+              <RefreshCw size={11} strokeWidth={1.5} className="animate-spin" />
+              <span>Verifying...</span>
             </>
           ) : (
             <>
-              <ShieldCheck size={12} style={{ color: '#38bdf8' }} />
-              Verify Audit Chain
+              <ShieldCheck size={11} strokeWidth={1.5} style={{ color: 'var(--border-accent)' }} />
+              <kbd>V</kbd>
+              <span>Verify Chain</span>
             </>
           )}
         </button>
 
-        {/* Audit Status Pill if verified */}
         {lastAuditReport && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
-            fontSize: '11px',
-            color: lastAuditReport.valid ? '#34d399' : '#fb7185',
+            gap: '4px',
+            fontSize: '10px',
+            color: lastAuditReport.valid ? 'var(--acc-credit)' : 'var(--acc-debit)',
             fontFamily: 'var(--font-mono)',
+            padding: '2px 5px',
+            background: 'var(--bg-canvas)',
+            border: '1px solid var(--border-grid)',
+            borderRadius: '2px',
           }}>
-            <CheckCircle2 size={12} />
+            <Check size={11} strokeWidth={2} />
             <span className="tabular-nums">{lastAuditReport.executionTimeMs}ms</span>
           </div>
         )}
       </div>
 
-      {/* Action Controls: Stress Burst & New Transfer */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {/* Action Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         {!isJava && onResetState && (
           <button
             className="btn btn-secondary"
             onClick={onResetState}
-            style={{ height: '32px', color: '#f59e0b' }}
-            title="Reset standalone localStorage state back to institutional seed"
+            style={{ height: '26px', fontSize: '11px', color: '#f59e0b' }}
+            title="Reset embedded standalone state back to institutional seed (Hotkey: R)"
           >
-            <RotateCcw size={12} />
-            Reset State
+            <RotateCcw size={11} strokeWidth={1.5} />
+            <kbd>R</kbd>
+            <span>Reset</span>
           </button>
         )}
 
@@ -268,31 +241,33 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           className="btn btn-burst"
           onClick={() => onRunBurst(burstCount)}
           disabled={isBurstRunning}
-          style={{ height: '32px' }}
-          title="Spawn 500 concurrent transfers"
+          style={{ height: '26px', fontSize: '11px' }}
+          title="Simulate 500 concurrent double-entry transfers (Hotkey: B)"
         >
-          <Zap size={13} />
-          {isBurstRunning ? 'Running 500-Tx Burst...' : 'Run 500-Tx Stress Burst'}
+          <Zap size={11} strokeWidth={1.5} />
+          <kbd style={{ color: '#c4b5fd', borderColor: '#3b2d68' }}>B</kbd>
+          <span>{isBurstRunning ? 'Bursting...' : '500-Tx Burst'}</span>
         </button>
 
         <button
           className="btn btn-secondary"
           onClick={onOpenCreateAccount}
-          style={{ height: '32px' }}
-          title="Add a new institutional account to chart of accounts"
+          style={{ height: '26px', fontSize: '11px' }}
+          title="Create a new account in Chart of Accounts"
         >
-          <PlusCircle size={13} />
-          New Account
+          <Building size={11} strokeWidth={1.5} />
+          <span>New Account</span>
         </button>
 
         <button
           className="btn btn-primary"
           onClick={onOpenTransferModal}
-          style={{ height: '32px' }}
-          title="Create Double-Entry Transfer or Two-Phase Hold"
+          style={{ height: '26px', fontSize: '11px' }}
+          title="Create Double-Entry Transfer or Authorization Hold (Hotkey: N)"
         >
-          <ArrowRightLeft size={13} />
-          Transfer / Hold
+          <Plus size={11} strokeWidth={2} />
+          <kbd style={{ color: '#ffffff', borderColor: '#0284c7', background: 'rgba(0,0,0,0.25)' }}>N</kbd>
+          <span>New Entry</span>
         </button>
       </div>
     </header>

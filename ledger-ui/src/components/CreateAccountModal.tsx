@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   X,
-  PlusCircle,
+  Building,
   AlertTriangle,
   RefreshCw
 } from 'lucide-react';
@@ -57,17 +57,17 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px' }}>
 
         <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <PlusCircle size={16} style={{ color: '#38bdf8' }} />
-            <span style={{ fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Building size={13} strokeWidth={1.5} style={{ color: 'var(--border-accent)' }} />
+            <span className="font-mono" style={{ fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-main)' }}>
               Create Institutional Account
             </span>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-            <X size={16} />
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <X size={14} strokeWidth={1.5} />
           </button>
         </div>
 
@@ -75,23 +75,23 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           <div className="modal-body">
             {error && (
               <div style={{
-                background: 'rgba(244, 63, 94, 0.12)',
-                border: '1px solid rgba(244, 63, 94, 0.4)',
-                borderRadius: '4px',
-                padding: '8px 12px',
-                color: '#fb7185',
+                background: 'var(--acc-debit-bg)',
+                border: '1px solid var(--acc-debit-border)',
+                borderRadius: '2px',
+                padding: '6px 10px',
+                color: 'var(--acc-debit)',
                 fontSize: '11px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
               }}>
-                <AlertTriangle size={14} />
+                <AlertTriangle size={13} strokeWidth={1.5} />
                 <span>{error}</span>
               </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
                 Account Identifier
               </label>
               <input
@@ -105,9 +105,9 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
                   Account Type
                 </label>
                 <select
@@ -123,8 +123,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 </select>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
                   Currency (ISO-4217)
                 </label>
                 <select
@@ -144,11 +144,11 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              background: 'var(--bg-app)',
-              padding: '10px 12px',
-              borderRadius: '4px',
-              border: '1px solid var(--border-subtle)',
+              gap: '6px',
+              background: 'var(--bg-canvas)',
+              padding: '8px 10px',
+              borderRadius: '2px',
+              border: '1px solid var(--border-grid)',
             }}>
               <input
                 type="checkbox"
@@ -157,28 +157,32 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 onChange={e => setAllowNegativeBalance(e.target.checked)}
                 style={{ cursor: 'pointer' }}
               />
-              <label htmlFor="allowNeg" style={{ fontSize: '11px', color: '#cbd5e1', cursor: 'pointer', lineHeight: 1.3 }}>
-                <strong>Allow Negative Balance (Overdraft / Central Liquidity)</strong>
-                <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
-                  Only enabled for central reserve or liquidity faucet accounts.
-                </div>
+              <label htmlFor="allowNeg" style={{ fontSize: '10px', color: 'var(--text-secondary)', cursor: 'pointer', lineHeight: 1.3 }}>
+                Allow negative balance (e.g. Treasury Central Liquidity / Clearing)
               </label>
             </div>
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onClose}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? (
                 <>
-                  <RefreshCw size={12} className="animate-spin" />
-                  Creating...
+                  <RefreshCw size={11} strokeWidth={1.5} className="animate-spin" />
+                  <span>Creating...</span>
                 </>
-              ) : (
-                'Create Account'
-              )}
+              ) : 'Create Account'}
             </button>
           </div>
         </form>

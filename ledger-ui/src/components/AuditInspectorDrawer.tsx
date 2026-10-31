@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import {
   X,
   ShieldCheck,
-  CheckCircle2,
   Copy,
   ArrowRight,
   Clock,
-  Layers,
   Check,
+  CheckCircle2,
+  Repeat,
   AlertCircle
 } from 'lucide-react';
 import type { Transaction } from '../types/ledger';
@@ -19,6 +19,7 @@ interface AuditInspectorDrawerProps {
   onSettleHold: (txId: string) => Promise<void>;
   onVoidHold: (txId: string) => Promise<void>;
   onJumpToHash: (hash: string) => void;
+  onReplayIdempotency?: (tx: Transaction) => void;
 }
 
 export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
@@ -27,6 +28,7 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
   onSettleHold,
   onVoidHold,
   onJumpToHash,
+  onReplayIdempotency,
 }) => {
   const [isSettling, setIsSettling] = useState(false);
   const [isVoiding, setIsVoiding] = useState(false);
@@ -60,35 +62,34 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
 
   // Zero-float math balance calculation
   const balanceInfo = calculateLegsBalance(transaction.postings);
+  const formattedSeq = String(transaction.sequenceNum).padStart(5, '0');
 
   return (
     <aside style={{
-      width: '440px',
+      width: '380px',
       height: '100%',
-      background: 'var(--bg-secondary)',
-      borderLeft: '1px solid var(--border-subtle)',
+      background: 'var(--bg-panel)',
+      borderLeft: '1px solid var(--border-grid)',
       display: 'flex',
       flexDirection: 'column',
       flexShrink: 0,
       overflow: 'hidden',
       zIndex: 20,
     }}>
-      {/* Drawer Header */}
+      {/* Drawer Header (Voucher Style) */}
       <div style={{
-        padding: '14px 16px',
-        borderBottom: '1px solid var(--border-subtle)',
+        height: '34px',
+        padding: '0 10px',
+        borderBottom: '1px solid var(--border-grid)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: '#0a1020',
+        background: 'var(--bg-elevated)',
+        flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Layers size={15} style={{ color: '#38bdf8' }} />
-          <span style={{ fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Audit Inspector
-          </span>
-          <span className="tabular-nums font-mono" style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 600 }}>
-            #{transaction.sequenceNum}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span className="font-mono" style={{ fontWeight: 700, fontSize: '11px', color: 'var(--border-accent)' }}>
+            VOUCHER #{formattedSeq}
           </span>
           <span className={`badge badge-${transaction.status.toLowerCase()}`}>
             {transaction.status}
@@ -97,114 +98,114 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
 
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          title="Close Inspector"
+          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          title="Close Inspector (Esc)"
         >
-          <X size={16} />
+          <X size={14} strokeWidth={1.5} />
         </button>
       </div>
 
       {/* Drawer Scrollable Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-        {/* Transaction Summary Card */}
+        {/* Voucher Meta Info */}
         <div style={{
-          background: 'var(--bg-panel)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '6px',
-          padding: '12px',
+          background: 'var(--bg-canvas)',
+          border: '1px solid var(--border-grid)',
+          borderRadius: '2px',
+          padding: '8px 10px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
+          gap: '6px',
         }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)' }}>
             {transaction.description}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Clock size={12} />
+              <Clock size={11} strokeWidth={1.5} />
               <span className="tabular-nums font-mono">{transaction.postedAt}</span>
             </div>
-            <div className="tabular-nums font-mono" style={{ fontWeight: 700, fontSize: '13px', color: '#38bdf8' }}>
+            <div className="tabular-nums font-mono" style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-main)' }}>
               {formatMinor(transaction.totalAmountMinor)}
             </div>
           </div>
         </div>
 
-        {/* Two-Phase Authorization Hold Action Controls */}
+        {/* Two-Phase Hold Controls */}
         {transaction.status === 'PENDING' && (
           <div style={{
-            background: 'rgba(245, 158, 11, 0.08)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            borderRadius: '6px',
-            padding: '12px',
+            background: 'var(--acc-hold-bg)',
+            border: '1px solid var(--acc-hold-border)',
+            borderRadius: '2px',
+            padding: '8px 10px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '6px',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fbbf24', fontWeight: 600, fontSize: '12px' }}>
-              <AlertCircle size={14} />
-              <span>Two-Phase Authorization Hold Active</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--acc-hold)', fontWeight: 600, fontSize: '11px' }}>
+              <AlertCircle size={13} strokeWidth={1.5} />
+              <span>Two-Phase Authorization Hold</span>
             </div>
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              Funds are reserved in escrow pending capture or release. Choose an operation to complete this transaction:
+            <p style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+              Funds are reserved in escrow pending capture or release:
             </p>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
               <button
                 className="btn btn-settle"
                 onClick={handleSettle}
                 disabled={isSettling || isVoiding}
-                style={{ flex: 1, height: '30px', fontSize: '11px' }}
+                style={{ flex: 1, height: '26px', fontSize: '10px' }}
               >
-                <CheckCircle2 size={13} />
-                {isSettling ? 'Settling...' : 'Settle Hold (Capture)'}
+                <CheckCircle2 size={11} strokeWidth={1.5} />
+                <span>{isSettling ? 'Settling...' : 'Settle (Capture)'}</span>
               </button>
 
               <button
                 className="btn btn-void"
                 onClick={handleVoid}
                 disabled={isSettling || isVoiding}
-                style={{ flex: 1, height: '30px', fontSize: '11px' }}
+                style={{ flex: 1, height: '26px', fontSize: '10px' }}
               >
-                <X size={13} />
-                {isVoiding ? 'Voiding...' : 'Void Hold (Release)'}
+                <X size={11} strokeWidth={1.5} />
+                <span>{isVoiding ? 'Voiding...' : 'Void (Release)'}</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* Double-Entry Balancing Breakdown Table */}
+        {/* T-Account Double-Entry Legs Table */}
         <div style={{
-          background: 'var(--bg-panel)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '6px',
+          background: 'var(--bg-canvas)',
+          border: '1px solid var(--border-grid)',
+          borderRadius: '2px',
           overflow: 'hidden',
         }}>
           <div style={{
-            padding: '8px 12px',
-            background: '#0d1527',
-            borderBottom: '1px solid var(--border-subtle)',
+            padding: '5px 8px',
+            background: 'var(--bg-elevated)',
+            borderBottom: '1px solid var(--border-grid)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-              Double-Entry Balancing Legs ({transaction.postings.length})
+            <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              T-Account Postings ({transaction.postings.length})
             </span>
-            <span className="badge badge-verified" style={{ fontSize: '10px' }}>
-              SUM(L) == 0
+            <span className="badge badge-verified" style={{ fontSize: '9px' }}>
+              BALANCED ∑ = 0
             </span>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
             <thead>
-              <tr style={{ background: '#0a0f1d', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-dim)', textAlign: 'left' }}>
-                <th style={{ padding: '6px 10px', width: '30px' }}>#</th>
-                <th style={{ padding: '6px 10px' }}>Account</th>
-                <th style={{ padding: '6px 10px', textAlign: 'center', width: '70px' }}>Leg</th>
-                <th style={{ padding: '6px 10px', textAlign: 'right' }}>Amount</th>
+              <tr style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border-grid)', color: 'var(--text-muted)', textAlign: 'left', textTransform: 'uppercase' }}>
+                <th style={{ padding: '4px 8px' }}>Account</th>
+                <th style={{ padding: '4px 6px', textAlign: 'center', width: '35px' }}>Dir</th>
+                <th style={{ padding: '4px 8px', textAlign: 'right', width: '70px' }}>Debit (DR)</th>
+                <th style={{ padding: '4px 8px', textAlign: 'right', width: '70px' }}>Credit (CR)</th>
               </tr>
             </thead>
             <tbody>
@@ -212,52 +213,56 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
                 const isDebit = leg.direction === 'DEBIT';
 
                 return (
-                  <tr key={leg.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td className="tabular-nums font-mono text-dim" style={{ padding: '6px 10px' }}>
-                      {leg.sequenceIndex}
-                    </td>
-                    <td style={{ padding: '6px 10px' }}>
-                      <div className="font-mono" style={{ fontWeight: 600, color: '#f1f5f9' }}>
+                  <tr key={leg.id} style={{ borderBottom: '1px solid var(--border-grid)' }}>
+                    <td style={{ padding: '4px 8px' }}>
+                      <div className="font-mono" style={{ fontWeight: 600, color: 'var(--text-main)' }}>
                         {leg.accountNumber}
                       </div>
-                      <div style={{ fontSize: '9px', color: 'var(--text-dim)' }}>
-                        {leg.accountId.slice(0, 8)}...
+                      <div style={{ fontSize: '8px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                        {leg.accountId.slice(0, 8)}..
                       </div>
                     </td>
-                    <td style={{ padding: '6px 10px', textAlign: 'center' }}>
-                      <span className={`badge badge-${isDebit ? 'debit' : 'credit'}`} style={{ fontSize: '10px' }}>
-                        {leg.direction}
+                    <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                      <span className={`badge-dir badge-dir-${isDebit ? 'dr' : 'cr'}`}>
+                        {isDebit ? 'DR' : 'CR'}
                       </span>
                     </td>
                     <td className="tabular-nums font-mono text-right" style={{
-                      padding: '6px 10px',
+                      padding: '4px 8px',
+                      color: isDebit ? 'var(--acc-debit)' : 'transparent',
                       fontWeight: 600,
-                      color: isDebit ? '#fb7185' : '#34d399',
                     }}>
-                      {isDebit ? '-' : '+'}{formatMinor(leg.amountMinor, leg.currency)}
+                      {isDebit ? formatMinor(leg.amountMinor, leg.currency) : '-'}
+                    </td>
+                    <td className="tabular-nums font-mono text-right" style={{
+                      padding: '4px 8px',
+                      color: !isDebit ? 'var(--acc-credit)' : 'transparent',
+                      fontWeight: 600,
+                    }}>
+                      {!isDebit ? formatMinor(leg.amountMinor, leg.currency) : '-'}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
-            {/* Invariant Verification Footer */}
+            {/* Classic Accounting Double-Rule Footer */}
             <tfoot>
-              <tr style={{ background: '#090e1a', borderTop: '1px solid var(--border-strong)' }}>
-                <td colSpan={2} style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-dim)' }}>
-                  Total Debits / Credits
+              <tr className="accounting-double-rule" style={{ background: 'var(--bg-elevated)' }}>
+                <td colSpan={2} style={{ padding: '5px 8px', fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                  Total Balance
                 </td>
-                <td style={{ padding: '8px 10px', textAlign: 'center' }}>
-                  <CheckCircle2 size={13} style={{ color: '#10b981', display: 'inline' }} />
-                </td>
-                <td className="tabular-nums font-mono text-right" style={{ padding: '8px 10px', fontWeight: 700, color: '#38bdf8' }}>
+                <td className="tabular-nums font-mono text-right" style={{ padding: '5px 8px', fontWeight: 700, color: 'var(--acc-debit)' }}>
                   {balanceInfo.totalDebitsFormatted}
                 </td>
+                <td className="tabular-nums font-mono text-right" style={{ padding: '5px 8px', fontWeight: 700, color: 'var(--acc-credit)' }}>
+                  {balanceInfo.totalCreditsFormatted}
+                </td>
               </tr>
-              <tr style={{ background: 'rgba(16, 185, 129, 0.06)' }}>
-                <td colSpan={3} style={{ padding: '6px 10px', fontWeight: 600, color: '#34d399', fontSize: '10px' }}>
+              <tr style={{ background: 'var(--acc-credit-bg)' }}>
+                <td colSpan={2} style={{ padding: '4px 8px', fontWeight: 600, color: 'var(--acc-credit)', fontSize: '9px', fontFamily: 'var(--font-mono)' }}>
                   NET IMBALANCE:
                 </td>
-                <td className="tabular-nums font-mono text-right" style={{ padding: '6px 10px', fontWeight: 700, color: '#34d399' }}>
+                <td colSpan={2} className="tabular-nums font-mono text-right" style={{ padding: '4px 8px', fontWeight: 700, color: 'var(--acc-credit)' }}>
                   $0.00 (VERIFIED)
                 </td>
               </tr>
@@ -265,136 +270,148 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
           </table>
         </div>
 
-        {/* Cryptographic Proof Card */}
+        {/* Cryptographic Linkage & Hashes */}
         <div style={{
-          background: 'var(--bg-panel)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '6px',
-          padding: '12px',
+          background: 'var(--bg-canvas)',
+          border: '1px solid var(--border-grid)',
+          borderRadius: '2px',
+          padding: '8px 10px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
+          gap: '8px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase' }}>
-            <ShieldCheck size={14} />
-            <span>Cryptographic Proof & SHA-256 Linkage</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--border-accent)', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase' }}>
+            <ShieldCheck size={12} strokeWidth={1.5} />
+            <span>Cryptographic Merkle & SHA-256 Linkage</span>
           </div>
 
           {/* Current Transaction Hash */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
-              Transaction Block Hash (SHA-256)
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
+              Transaction Hash (SHA-256)
             </span>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: '#090e1a',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '4px',
-              padding: '5px 8px',
+              background: 'var(--bg-panel)',
+              border: '1px solid var(--border-grid)',
+              borderRadius: '2px',
+              padding: '3px 6px',
             }}>
-              <span className="font-mono tabular-nums" style={{ fontSize: '10px', color: '#38bdf8', wordBreak: 'break-all' }}>
+              <span className="font-mono tabular-nums" style={{ fontSize: '9px', color: 'var(--border-accent)', wordBreak: 'break-all' }}>
                 {transaction.hash}
               </span>
               <button
                 onClick={() => handleCopy('hash', transaction.hash)}
-                style={{ background: 'none', border: 'none', color: copiedKey === 'hash' ? '#34d399' : 'var(--text-dim)', cursor: 'pointer', paddingLeft: '6px' }}
-                title="Copy full SHA-256 hash"
+                style={{ background: 'none', border: 'none', color: copiedKey === 'hash' ? 'var(--acc-credit)' : 'var(--text-muted)', cursor: 'pointer', paddingLeft: '4px' }}
+                title="Copy SHA-256 hash"
               >
-                {copiedKey === 'hash' ? <Check size={12} /> : <Copy size={12} />}
+                {copiedKey === 'hash' ? <Check size={11} strokeWidth={2} /> : <Copy size={11} strokeWidth={1.5} />}
               </button>
             </div>
           </div>
 
-          {/* Previous Transaction Hash (Clickable chain jump) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
-              Previous Block Hash (Parent Link)
+          {/* Previous Transaction Hash (Parent Link) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
+              Parent Hash Link
             </span>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: '#090e1a',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '4px',
-              padding: '5px 8px',
+              background: 'var(--bg-panel)',
+              border: '1px solid var(--border-grid)',
+              borderRadius: '2px',
+              padding: '3px 6px',
             }}>
-              <span className="font-mono tabular-nums" style={{ fontSize: '10px', color: '#94a3b8', wordBreak: 'break-all' }}>
+              <span className="font-mono tabular-nums" style={{ fontSize: '9px', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
                 {transaction.prevHash}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', paddingLeft: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', paddingLeft: '4px' }}>
                 <button
                   onClick={() => handleCopy('prevHash', transaction.prevHash)}
-                  style={{ background: 'none', border: 'none', color: copiedKey === 'prevHash' ? '#34d399' : 'var(--text-dim)', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: copiedKey === 'prevHash' ? 'var(--acc-credit)' : 'var(--text-muted)', cursor: 'pointer' }}
                   title="Copy Previous Hash"
                 >
-                  {copiedKey === 'prevHash' ? <Check size={12} /> : <Copy size={12} />}
+                  {copiedKey === 'prevHash' ? <Check size={11} strokeWidth={2} /> : <Copy size={11} strokeWidth={1.5} />}
                 </button>
                 {transaction.prevHash !== '0000000000000000000000000000000000000000000000000000000000000000' && (
                   <button
                     onClick={() => onJumpToHash(transaction.prevHash)}
-                    style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer' }}
-                    title="Jump to parent transaction in ledger"
+                    style={{ background: 'none', border: 'none', color: 'var(--border-accent)', cursor: 'pointer' }}
+                    title="Jump to parent block in journal"
                   >
-                    <ArrowRight size={12} />
+                    <ArrowRight size={11} strokeWidth={1.5} />
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Idempotency Key */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
-              Idempotency Key
-            </span>
+          {/* Idempotency Key & Replay Button */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
+                Idempotency Key
+              </span>
+              {onReplayIdempotency && (
+                <button
+                  onClick={() => onReplayIdempotency(transaction)}
+                  className="btn btn-secondary"
+                  style={{ padding: '0 4px', height: '18px', fontSize: '9px', gap: '3px' }}
+                  title="Replay this key against backend to verify HTTP 200 OK deduplication"
+                >
+                  <Repeat size={9} strokeWidth={1.5} /> Replay Test
+                </button>
+              )}
+            </div>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: '#090e1a',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '4px',
-              padding: '5px 8px',
+              background: 'var(--bg-panel)',
+              border: '1px solid var(--border-grid)',
+              borderRadius: '2px',
+              padding: '3px 6px',
             }}>
-              <span className="font-mono tabular-nums" style={{ fontSize: '11px', color: '#cbd5e1' }}>
+              <span className="font-mono tabular-nums" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
                 {transaction.idempotencyKey}
               </span>
               <button
                 onClick={() => handleCopy('idempotency', transaction.idempotencyKey)}
-                style={{ background: 'none', border: 'none', color: copiedKey === 'idempotency' ? '#34d399' : 'var(--text-dim)', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: copiedKey === 'idempotency' ? 'var(--acc-credit)' : 'var(--text-muted)', cursor: 'pointer' }}
                 title="Copy Idempotency Key"
               >
-                {copiedKey === 'idempotency' ? <Check size={12} /> : <Copy size={12} />}
+                {copiedKey === 'idempotency' ? <Check size={11} strokeWidth={2} /> : <Copy size={11} strokeWidth={1.5} />}
               </button>
             </div>
           </div>
 
           {/* Transaction UUID */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
               Transaction UUID
             </span>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: '#090e1a',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '4px',
-              padding: '5px 8px',
+              background: 'var(--bg-panel)',
+              border: '1px solid var(--border-grid)',
+              borderRadius: '2px',
+              padding: '3px 6px',
             }}>
-              <span className="font-mono tabular-nums" style={{ fontSize: '11px', color: '#7dd3fc' }}>
+              <span className="font-mono tabular-nums" style={{ fontSize: '10px', color: 'var(--text-code)' }}>
                 {transaction.id}
               </span>
               <button
                 onClick={() => handleCopy('uuid', transaction.id)}
-                style={{ background: 'none', border: 'none', color: copiedKey === 'uuid' ? '#34d399' : 'var(--text-dim)', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: copiedKey === 'uuid' ? 'var(--acc-credit)' : 'var(--text-muted)', cursor: 'pointer' }}
                 title="Copy UUID"
               >
-                {copiedKey === 'uuid' ? <Check size={12} /> : <Copy size={12} />}
+                {copiedKey === 'uuid' ? <Check size={11} strokeWidth={2} /> : <Copy size={11} strokeWidth={1.5} />}
               </button>
             </div>
           </div>

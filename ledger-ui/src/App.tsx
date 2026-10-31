@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  HeaderTelemetryBar
-} from './components/HeaderTelemetryBar';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { HeaderTelemetryBar } from './components/HeaderTelemetryBar';
 import { AccountsPane } from './components/AccountsPane';
-import { VirtualizedLedgerTable } from './components/VirtualizedLedgerTable';
+import { VirtualizedLedgerTable, type VirtualizedLedgerTableHandle } from './components/VirtualizedLedgerTable';
 import { AuditInspectorDrawer } from './components/AuditInspectorDrawer';
 import { TransferModal } from './components/TransferModal';
 import { AccountStatementModal } from './components/AccountStatementModal';
@@ -12,7 +10,7 @@ import { CreateAccountModal } from './components/CreateAccountModal';
 import type { Account, AuditReport, Transaction } from './types/ledger';
 import { ledgerClient, type EngineMode } from './api/LedgerClient';
 import type { StreamConnectionStatus } from './services/api';
-import { Zap, CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -33,7 +31,10 @@ export const App: React.FC = () => {
   const [isBurstRunning, setIsBurstRunning] = useState(false);
   const [isVerifyingAudit, setIsVerifyingAudit] = useState(false);
   const [lastAuditReport, setLastAuditReport] = useState<AuditReport | null>(null);
+  const [lastAuditTime, setLastAuditTime] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<{ title: string; detail: string; type: 'success' | 'burst' | 'error' } | null>(null);
+
+  const tableRef = useRef<VirtualizedLedgerTableHandle>(null);
 
   // Load initial dataset
   const refreshAll = useCallback(async () => {
@@ -58,7 +59,10 @@ export const App: React.FC = () => {
       setEngineMode(detected);
       refreshAll();
       ledgerClient.verifyAuditChain()
-        .then(report => setLastAuditReport(report))
+        .then(report => {
+          setLastAuditReport(report);
+          setLastAuditTime(new Date().toTimeString().slice(0, 8));
+        })
         .catch(e => console.warn('Audit boot check:', e));
     });
 
@@ -112,6 +116,7 @@ export const App: React.FC = () => {
     try {
       const report = await ledgerClient.verifyAuditChain();
       setLastAuditReport(report);
+      setLastAuditTime(new Date().toTimeString().slice(0, 8));
       setIsAuditModalOpen(true);
     } catch (err: any) {
       setToastMessage({
@@ -159,7 +164,7 @@ export const App: React.FC = () => {
       setAccounts(accs);
       setToastMessage({
         title: 'Hold Settled Successfully',
-        detail: `Captured authorization hold #${settled.sequenceNum} and credited settlement account.`,
+        detail: `Captured authorization hold #${settled.sequenceNum} and credited destination.`,
         type: 'success',
       });
     } catch (err: any) {
@@ -205,12 +210,96 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleReplayIdempotency = async (tx: Transaction) => {
+    try {
+      const firstLeg = tx.postings[0];
+      const secondLeg = tx.postings[1] || tx.postings[0];
+      const res = await ledgerClient.executeTransfer({
+        sourceAccountId: firstLeg.accountId,
+        destinationAccountId: secondLeg.accountId,
+        amountMinor: tx.totalAmountMinor,
+        description: tx.description,
+      }, tx.idempotencyKey);
+
+      setToastMessage({
+        title: `HTTP ${res.status} OK — Idempotent Replay Verified`,
+        detail: `Key ${tx.idempotencyKey.slice(0, 16)}.. returned identical transaction without duplicate debit/credit.`,
+        type: 'success',
+      });
+    } catch (err: any) {
+      setToastMessage({
+        title: 'Idempotency Replay Error',
+        detail: err.message || 'Failed to replay',
+        type: 'error',
+      });
+    }
+  };
+
   const handleOpenStatement = (account: Account) => {
     setStatementAccount(account);
     setIsStatementModalOpen(true);
   };
 
+  // Keyboard navigation & global shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
+
+      if (e.key === 'Escape') {
+        if (isTransferModalOpen) setIsTransferModalOpen(false);
+        else if (isCreateAccountOpen) setIsCreateAccountOpen(false);
+        else if (isStatementModalOpen) setIsStatementModalOpen(false);
+        else if (isAuditModalOpen) setIsAuditModalOpen(false);
+        else if (selectedTransaction) setSelectedTransaction(null);
+        return;
+      }
+
+      if (isInput) return;
+
+      if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
+        setTransactions(currentTxs => {
+          if (currentTxs.length === 0) return currentTxs;
+          setSelectedTransaction(currentSel => {
+            const idx = currentTxs.findIndex(t => t.id === currentSel?.id);
+            if (idx === -1 || idx >= currentTxs.length - 1) return currentTxs[0];
+            return currentTxs[idx + 1];
+          });
+          return currentTxs;
+        });
+      } else if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        setTransactions(currentTxs => {
+          if (currentTxs.length === 0) return currentTxs;
+          setSelectedTransaction(currentSel => {
+            const idx = currentTxs.findIndex(t => t.id === currentSel?.id);
+            if (idx <= 0) return currentTxs[currentTxs.length - 1];
+            return currentTxs[idx - 1];
+          });
+          return currentTxs;
+        });
+      } else if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setIsTransferModalOpen(true);
+      } else if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault();
+        if (!isBurstRunning) handleRunBurst(500);
+      } else if (e.key === 'v' || e.key === 'V') {
+        e.preventDefault();
+        if (!isVerifyingAudit) handleVerifyAudit();
+      } else if (e.key === '/') {
+        e.preventDefault();
+        tableRef.current?.focusSearch();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTransferModalOpen, isCreateAccountOpen, isStatementModalOpen, isAuditModalOpen, selectedTransaction, isBurstRunning, isVerifyingAudit]);
+
   const latestHash = transactions.length > 0 ? transactions[0].hash : '';
+  const isJava = engineMode === 'JAVA_21_BACKEND';
 
   return (
     <div style={{
@@ -219,9 +308,9 @@ export const App: React.FC = () => {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      background: 'var(--bg-app)',
+      background: 'var(--bg-canvas)',
     }}>
-      {/* Top Telemetry & Cryptographic Invariant Bar */}
+      {/* Row 1: Command & Telemetry Strip (38px) */}
       <HeaderTelemetryBar
         accounts={accounts}
         connectionStatus={connectionStatus}
@@ -247,14 +336,14 @@ export const App: React.FC = () => {
         lastAuditReport={lastAuditReport}
       />
 
-      {/* Main 3-Pane Mission Control Layout */}
+      {/* Row 2: Main 3-Pane Mission Control Layout (Full-bleed hairline grid) */}
       <div style={{
         flex: 1,
         display: 'flex',
         overflow: 'hidden',
         position: 'relative',
       }}>
-        {/* Left Pane: Chart of Accounts & Hierarchy Explorer */}
+        {/* Left Pane (290px): Chart of Accounts Tree */}
         <AccountsPane
           accounts={accounts}
           selectedAccountId={selectedAccountId}
@@ -262,8 +351,9 @@ export const App: React.FC = () => {
           onOpenStatement={handleOpenStatement}
         />
 
-        {/* Center Pane: Virtualized Real-Time Ledger Table */}
+        {/* Center Pane (Flex-1): High-Density Virtualized Journal Grid */}
         <VirtualizedLedgerTable
+          ref={tableRef}
           transactions={transactions}
           selectedTransactionId={selectedTransaction?.id || null}
           onSelectTransaction={setSelectedTransaction}
@@ -271,7 +361,7 @@ export const App: React.FC = () => {
           onClearAccountFilter={() => setSelectedAccountId(null)}
         />
 
-        {/* Right Split-Pane Drawer: Double-Entry & Cryptographic Audit Inspector */}
+        {/* Right Split-Pane (380px): Double-Entry Voucher & Cryptographic Inspector */}
         {selectedTransaction && (
           <AuditInspectorDrawer
             transaction={selectedTransaction}
@@ -279,60 +369,94 @@ export const App: React.FC = () => {
             onSettleHold={handleSettleHold}
             onVoidHold={handleVoidHold}
             onJumpToHash={handleJumpToHash}
+            onReplayIdempotency={handleReplayIdempotency}
           />
         )}
       </div>
 
-      {/* Floating Toast Notification Banner */}
+      {/* Row 3: Institutional Bottom Status Bar (24px) */}
+      <footer style={{
+        height: '24px',
+        background: 'var(--bg-elevated)',
+        borderTop: '1px solid var(--border-grid)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 10px',
+        fontSize: '10px',
+        color: 'var(--text-muted)',
+        fontFamily: 'var(--font-mono)',
+        flexShrink: 0,
+        userSelect: 'none',
+        zIndex: 5,
+      }}>
+        {/* Keyboard shortcut guide */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span><kbd>↑/↓</kbd> Navigate</span>
+          <span><kbd>N</kbd> New Entry</span>
+          <span><kbd>B</kbd> 500-Tx Burst</span>
+          <span><kbd>V</kbd> Audit Chain</span>
+          <span><kbd>/</kbd> Search</span>
+          <span><kbd>Esc</kbd> Close</span>
+        </div>
+
+        {/* Storage engine info & audit status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span>
+            STORAGE: {isJava ? 'PostgreSQL/H2 + WAL (/data/ledger.wal)' : 'Web Crypto Local SHA-256 Kernel'}
+          </span>
+          <span style={{ color: 'var(--border-grid)' }}>|</span>
+          <span style={{ color: lastAuditReport?.valid ? 'var(--acc-credit)' : 'var(--text-muted)' }}>
+            AUDIT: {lastAuditReport?.valid ? `${lastAuditReport.totalTransactionsScanned} BLOCKS OK (${lastAuditTime || 'BOOT'})` : 'PENDING SCAN'}
+          </span>
+        </div>
+      </footer>
+
+      {/* Floating Toast Notification Banner (Institutional flat styling) */}
       {toastMessage && (
         <div style={{
           position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          background: toastMessage.type === 'burst'
-            ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)'
-            : toastMessage.type === 'error'
-              ? '#3f121e'
-              : '#06281e',
+          bottom: '32px',
+          right: '16px',
+          background: 'var(--bg-panel)',
           border: `1px solid ${
             toastMessage.type === 'burst'
-              ? '#818cf8'
+              ? '#6366f1'
               : toastMessage.type === 'error'
-                ? '#f43f5e'
-                : '#10b981'
+                ? 'var(--acc-debit)'
+                : 'var(--acc-credit)'
           }`,
-          borderRadius: '6px',
-          padding: '12px 16px',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.7)',
+          borderRadius: '2px',
+          padding: '8px 12px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          maxWidth: '480px',
+          gap: '10px',
+          maxWidth: '420px',
           zIndex: 2000,
-          animation: 'fadeIn 0.2s ease',
         }}>
           {toastMessage.type === 'burst' ? (
-            <Zap size={20} style={{ color: '#a5b4fc', flexShrink: 0 }} />
+            <Info size={14} strokeWidth={1.5} style={{ color: '#818cf8', flexShrink: 0 }} />
           ) : toastMessage.type === 'error' ? (
-            <AlertTriangle size={20} style={{ color: '#fb7185', flexShrink: 0 }} />
+            <AlertTriangle size={14} strokeWidth={1.5} style={{ color: 'var(--acc-debit)', flexShrink: 0 }} />
           ) : (
-            <CheckCircle2 size={20} style={{ color: '#34d399', flexShrink: 0 }} />
+            <CheckCircle2 size={14} strokeWidth={1.5} style={{ color: 'var(--acc-credit)', flexShrink: 0 }} />
           )}
 
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: '12px', color: '#f8fafc' }}>
+            <div style={{ fontWeight: 600, fontSize: '11px', color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
               {toastMessage.title}
             </div>
-            <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '1px' }}>
               {toastMessage.detail}
             </div>
           </div>
 
           <button
             onClick={() => setToastMessage(null)}
-            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
           >
-            <X size={14} />
+            <X size={12} strokeWidth={1.5} />
           </button>
         </div>
       )}

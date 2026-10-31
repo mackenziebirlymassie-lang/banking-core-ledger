@@ -38,37 +38,50 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       return (
         <div style={{
           minHeight: '100vh',
-          backgroundColor: '#080c14',
+          backgroundColor: '#07090e',
           color: '#f8fafc',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '2rem',
-          fontFamily: 'monospace'
+          padding: '16px',
+          fontFamily: 'var(--font-mono, monospace)',
+          fontSize: '11px',
         }}>
           <div style={{
-            maxWidth: '680px',
-            backgroundColor: '#0f172a',
-            border: '1px solid #dc2626',
-            borderRadius: '8px',
-            padding: '1.5rem',
+            maxWidth: '600px',
+            backgroundColor: '#0c0f17',
+            border: '1px solid #1e2638',
+            borderRadius: '2px',
+            padding: '16px',
             width: '100%'
           }}>
-            <h2 style={{ color: '#ef4444', fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>
-              ⚠️ Ledger System Diagnostic Alert
-            </h2>
-            <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '16px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#f43f5e',
+              fontSize: '12px',
+              fontWeight: 700,
+              marginBottom: '10px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em'
+            }}>
+              <span>[DIAGNOSTIC ALERT]</span>
+              <span>Ledger System Exception</span>
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: '11px', marginBottom: '12px' }}>
               The workbench encountered an unhandled exception during initialization.
             </p>
             <pre style={{
-              backgroundColor: '#05070d',
-              padding: '12px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              color: '#fca5a5',
+              backgroundColor: '#07090e',
+              border: '1px solid #1e2638',
+              padding: '10px',
+              borderRadius: '2px',
+              fontSize: '10px',
+              color: '#fb7185',
               overflowX: 'auto',
-              marginBottom: '16px',
+              marginBottom: '14px',
               whiteSpace: 'pre-wrap'
             }}>
               {this.state.error?.message || String(this.state.error)}
@@ -76,30 +89,15 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
                 onClick={this.handleReset}
-                style={{
-                  backgroundColor: '#0284c7',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '8px 16px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  fontWeight: 600
-                }}
+                className="btn btn-primary"
+                style={{ height: '26px', fontSize: '11px' }}
               >
                 Reset Local Cache & Reload
               </button>
               <button
                 onClick={() => window.location.reload()}
-                style={{
-                  backgroundColor: '#1e293b',
-                  color: '#94a3b8',
-                  border: '1px solid #334155',
-                  borderRadius: '4px',
-                  padding: '8px 16px',
-                  fontSize: '13px',
-                  cursor: 'pointer'
-                }}
+                className="btn btn-secondary"
+                style={{ height: '26px', fontSize: '11px' }}
               >
                 Retry
               </button>
