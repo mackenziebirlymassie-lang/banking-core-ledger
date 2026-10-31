@@ -265,8 +265,46 @@ class SmartTransportRouter {
   }
 
   public resetStandaloneState(): void {
-    if (this.mode === 'EMBEDDED_KERNEL') {
-      standaloneKernel.resetState();
+    standaloneKernel.resetState();
+  }
+
+  public async exportSnapshot(): Promise<string> {
+    if (this.mode === 'JAVA_21_BACKEND') {
+      const [accs, txs, audit] = await Promise.all([
+        LedgerApi.getAccounts(),
+        LedgerApi.getTransactions(10000, 0),
+        LedgerApi.verifyAuditChain(),
+      ]);
+      const data = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        merkleRoot: audit.merkleRoot,
+        totalTransactions: txs.length,
+        accounts: accs,
+        transactions: txs,
+      };
+      return JSON.stringify(data, null, 2);
+    }
+    return standaloneKernel.exportSnapshot();
+  }
+
+  public async importSnapshot(jsonStr: string): Promise<{ success: boolean; count: number; error?: string }> {
+    return standaloneKernel.importSnapshot(jsonStr);
+  }
+
+  public async pingGateway(targetUrl: string): Promise<{ ok: boolean; latencyMs: number; statusText: string }> {
+    const start = performance.now();
+    try {
+      const url = targetUrl.replace(/\/$/, '') + '/api/v1/accounts';
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      const latencyMs = Math.round(performance.now() - start);
+      return { ok: res.ok, latencyMs, statusText: `${res.status} ${res.statusText}` };
+    } catch (e: any) {
+      const latencyMs = Math.round(performance.now() - start);
+      return { ok: false, latencyMs, statusText: e.name === 'AbortError' ? 'TIMEOUT (1500ms)' : 'CONNECTION REFUSED' };
     }
   }
 }

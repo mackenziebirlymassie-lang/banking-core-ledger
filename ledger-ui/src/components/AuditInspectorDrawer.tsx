@@ -11,7 +11,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import type { Transaction } from '../types/ledger';
-import { calculateLegsBalance, formatMinor } from '../utils/money';
+import { calculateLegsBalance, formatMinor, formatTimestamp } from '../utils/money';
+import { useSettings } from '../settings/SettingsContext';
 
 interface AuditInspectorDrawerProps {
   transaction: Transaction | null;
@@ -33,6 +34,7 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
   const [isSettling, setIsSettling] = useState(false);
   const [isVoiding, setIsVoiding] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { settings } = useSettings();
 
   if (!transaction) return null;
 
@@ -125,10 +127,10 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Clock size={11} strokeWidth={1.5} />
-              <span className="tabular-nums font-mono">{transaction.postedAt}</span>
+              <span className="tabular-nums font-mono">{formatTimestamp(transaction.postedAt, settings.timeDisplay)}</span>
             </div>
             <div className="tabular-nums font-mono" style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-main)' }}>
-              {formatMinor(transaction.totalAmountMinor)}
+              {formatMinor(transaction.totalAmountMinor, transaction.postings[0]?.currency || 'USD', settings.currencyFormat, settings.zeroStyle)}
             </div>
           </div>
         </div>
@@ -232,14 +234,14 @@ export const AuditInspectorDrawer: React.FC<AuditInspectorDrawerProps> = ({
                       color: isDebit ? 'var(--acc-debit)' : 'transparent',
                       fontWeight: 600,
                     }}>
-                      {isDebit ? formatMinor(leg.amountMinor, leg.currency) : '-'}
+                      {isDebit ? formatMinor(leg.amountMinor, leg.currency, settings.currencyFormat, settings.zeroStyle) : '-'}
                     </td>
                     <td className="tabular-nums font-mono text-right" style={{
                       padding: '4px 8px',
                       color: !isDebit ? 'var(--acc-credit)' : 'transparent',
                       fontWeight: 600,
                     }}>
-                      {!isDebit ? formatMinor(leg.amountMinor, leg.currency) : '-'}
+                      {!isDebit ? formatMinor(leg.amountMinor, leg.currency, settings.currencyFormat, settings.zeroStyle) : '-'}
                     </td>
                   </tr>
                 );

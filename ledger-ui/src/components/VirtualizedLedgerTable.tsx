@@ -5,7 +5,9 @@ import {
   X
 } from 'lucide-react';
 import type { Transaction, TransferStatus } from '../types/ledger';
-import { formatMinor } from '../utils/money';
+import { formatMinor, formatTimestamp } from '../utils/money';
+import { useSettings } from '../settings/SettingsContext';
+import { playTick } from '../utils/terminalAudio';
 
 export interface VirtualizedLedgerTableHandle {
   focusSearch: () => void;
@@ -19,19 +21,6 @@ interface VirtualizedLedgerTableProps {
   onClearAccountFilter: () => void;
 }
 
-function formatUtcTime(isoString: string): string {
-  if (!isoString) return '';
-  try {
-    const d = new Date(isoString);
-    const h = String(d.getUTCHours()).padStart(2, '0');
-    const m = String(d.getUTCMinutes()).padStart(2, '0');
-    const s = String(d.getUTCSeconds()).padStart(2, '0');
-    const ms = String(d.getUTCMilliseconds()).padStart(3, '0');
-    return `${h}:${m}:${s}.${ms}`;
-  } catch {
-    return isoString;
-  }
-}
 
 export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, VirtualizedLedgerTableProps>(({
   transactions,
@@ -86,11 +75,14 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
     return result;
   }, [transactions, filteredAccountId, statusFilter, searchTerm]);
 
-  // Viewport Virtualization with 30px row height
+  const { settings } = useSettings();
+  const rowHeight = settings.densityMode === 'COMPACT' ? 26 : 30;
+
+  // Viewport Virtualization with dynamic row height based on density setting
   const rowVirtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 30,
+    estimateSize: () => rowHeight,
     overscan: 25,
   });
 
@@ -234,7 +226,7 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
         userSelect: 'none',
       }}>
         <div className="tabular-nums text-right" style={{ paddingRight: '6px' }}>SEQ #</div>
-        <div className="text-left font-mono">UTC TIME</div>
+        <div className="text-left font-mono">{settings.timeDisplay} TIME</div>
         <div className="text-center">STATUS</div>
         <div className="text-left" style={{ paddingLeft: '6px' }}>DESCRIPTION</div>
         <div className="text-center font-mono">LEGS</div>
@@ -282,7 +274,10 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
               return (
                 <div
                   key={tx.id}
-                  onClick={() => onSelectTransaction(tx)}
+                  onClick={() => {
+                    onSelectTransaction(tx);
+                    playTick(settings.audioFeedback);
+                  }}
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -325,12 +320,12 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
                     #{tx.sequenceNum}
                   </div>
 
-                  {/* UTC Timestamp */}
+                  {/* Timestamp */}
                   <div className="tabular-nums font-mono text-left" style={{
                     fontSize: '10px',
                     color: 'var(--text-muted)',
                   }} title={tx.postedAt}>
-                    {formatUtcTime(tx.postedAt)}
+                    {formatTimestamp(tx.postedAt, settings.timeDisplay)}
                   </div>
 
                   {/* Status Badge */}
@@ -365,7 +360,12 @@ export const VirtualizedLedgerTable = forwardRef<VirtualizedLedgerTableHandle, V
                     color: tx.status === 'VOIDED' ? 'var(--text-muted)' : 'var(--text-main)',
                     paddingRight: '8px',
                   }}>
-                    {formatMinor(tx.totalAmountMinor)}
+                    {formatMinor(
+                      tx.totalAmountMinor,
+                      tx.postings[0]?.currency || 'USD',
+                      settings.currencyFormat,
+                      settings.zeroStyle
+                    )}
                   </div>
 
                   {/* Idempotency Key / UUID */}

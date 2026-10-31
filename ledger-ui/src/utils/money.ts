@@ -1,23 +1,81 @@
 import type { Direction } from '../types/ledger';
+import type { CurrencyFormat, ZeroStyle, TimeDisplay } from '../settings/types';
 
 /**
  * Institutional money utilities adhering to zero floating-point math.
  * All calculations are executed strictly via BigInt integer minor units.
  */
 
-export function formatMinor(minorInput: number | bigint | string, currency: string = 'USD'): string {
+export function formatMinor(
+  minorInput: number | bigint | string,
+  currency: string = 'USD',
+  currencyFormat: CurrencyFormat = 'SYMBOL',
+  zeroStyle: ZeroStyle = 'MUTED'
+): string {
   const minor = BigInt(minorInput || 0);
+
+  if (minor === 0n && zeroStyle === 'SLASHED') {
+    return 'Ø';
+  }
+
   const isNegative = minor < 0n;
   const abs = isNegative ? -minor : minor;
+
+  if (currencyFormat === 'MINOR_UNITS') {
+    const formattedCents = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const text = `${formattedCents} ¢`;
+    return isNegative ? `-${text}` : text;
+  }
+
   const major = abs / 100n;
   const cents = (abs % 100n).toString().padStart(2, '0');
 
   // Insert standard thousands commas
   const majorStr = major.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
+  if (currencyFormat === 'ISO_CODE') {
+    const code = currency ? currency.toUpperCase() : 'USD';
+    const formatted = `${code} ${majorStr}.${cents}`;
+    return isNegative ? `-${formatted}` : formatted;
+  }
+
+  // Default: 'SYMBOL'
   const symbol = getCurrencySymbol(currency);
   const formatted = `${symbol}${majorStr}.${cents}`;
   return isNegative ? `-${formatted}` : formatted;
+}
+
+export function formatTimestamp(
+  rawTime: string | number | undefined,
+  timeDisplay: TimeDisplay = 'UTC'
+): string {
+  if (!rawTime) return '—';
+
+  try {
+    const date = typeof rawTime === 'number' ? new Date(rawTime) : new Date(rawTime);
+    if (isNaN(date.getTime())) return String(rawTime);
+
+    if (timeDisplay === 'EPOCH_MS') {
+      return date.getTime().toString();
+    }
+
+    if (timeDisplay === 'LOCAL') {
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+    }
+
+    // Default: 'UTC' (ISO Zulu style)
+    return date.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  } catch {
+    return String(rawTime);
+  }
 }
 
 export function parseToMinor(inputStr: string): number {

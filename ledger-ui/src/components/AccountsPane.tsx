@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { Account, AccountType } from '../types/ledger';
 import { formatMinor } from '../utils/money';
+import { useSettings } from '../settings/SettingsContext';
 
 interface AccountsPaneProps {
   accounts: Account[];
@@ -35,6 +36,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
   onSelectAccount,
   onOpenStatement,
 }) => {
+  const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
@@ -191,7 +193,7 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
                   fontWeight: 600,
                   color: catTotalMinor < 0n ? 'var(--acc-debit)' : 'var(--text-main)',
                 }}>
-                  {formatMinor(catTotalMinor)}
+                  {formatMinor(catTotalMinor, 'USD', settings.currencyFormat, settings.zeroStyle)}
                 </span>
               </div>
 
@@ -264,11 +266,11 @@ export const AccountsPane: React.FC<AccountsPaneProps> = ({
                               fontWeight: 700,
                               color: account.availableBalanceMinor < 0 ? 'var(--acc-debit)' : 'var(--acc-credit)',
                             }}>
-                              {formatMinor(account.availableBalanceMinor, account.currency)}
+                              {formatMinor(account.availableBalanceMinor, account.currency, settings.currencyFormat, settings.zeroStyle)}
                             </span>
                             {account.pendingBalanceMinor > 0 && (
                               <span className="tabular-nums font-mono" style={{ fontSize: '9px', color: 'var(--acc-hold)' }}>
-                                Hold: {formatMinor(account.pendingBalanceMinor, account.currency)}
+                                Hold: {formatMinor(account.pendingBalanceMinor, account.currency, settings.currencyFormat, settings.zeroStyle)}
                               </span>
                             )}
                           </div>

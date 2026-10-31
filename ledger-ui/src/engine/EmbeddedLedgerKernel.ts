@@ -196,6 +196,47 @@ export class EmbeddedLedgerKernel {
     });
   }
 
+  public async exportSnapshot(): Promise<string> {
+    const report = await this.verifyAuditChain();
+    const data = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      merkleRoot: report.merkleRoot,
+      totalTransactions: this.transactions.length,
+      accounts: Array.from(this.accounts.values()),
+      transactions: this.transactions,
+      idempotencyMap: Object.fromEntries(this.idempotencyMap.entries()),
+    };
+    return JSON.stringify(data, null, 2);
+  }
+
+  public async importSnapshot(jsonStr: string): Promise<{ success: boolean; count: number; error?: string }> {
+    try {
+      const data = JSON.parse(jsonStr);
+      if (!data.accounts || !Array.isArray(data.accounts) || !data.transactions || !Array.isArray(data.transactions)) {
+        return { success: false, count: 0, error: 'Invalid snapshot format: missing accounts or transactions array' };
+      }
+      this.accounts.clear();
+      data.accounts.forEach((acc: Account) => this.accounts.set(acc.id, acc));
+      this.transactions = data.transactions;
+      this.idempotencyMap.clear();
+      if (data.idempotencyMap) {
+        Object.entries(data.idempotencyMap).forEach(([k, v]) => this.idempotencyMap.set(k, v as any));
+      }
+      this.saveState();
+      const audit = await this.verifyAuditChain();
+      this.emit({
+        eventType: 'BURST_COMPLETED',
+        updatedAccounts: Array.from(this.accounts.values()),
+        timestamp: new Date().toISOString(),
+        message: 'Ledger snapshot restored successfully',
+      });
+      return { success: audit.valid, count: this.transactions.length, error: audit.valid ? undefined : 'Audit chain verification failed on restored snapshot' };
+    } catch (e: any) {
+      return { success: false, count: 0, error: e.message || 'Failed to parse JSON snapshot' };
+    }
+  }
+
   private loadOrSeed() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);

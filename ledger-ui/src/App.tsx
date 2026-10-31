@@ -7,12 +7,16 @@ import { TransferModal } from './components/TransferModal';
 import { AccountStatementModal } from './components/AccountStatementModal';
 import { AuditReportModal } from './components/AuditReportModal';
 import { CreateAccountModal } from './components/CreateAccountModal';
+import { SettingsModal } from './components/settings/SettingsModal';
+import { useSettings } from './settings/SettingsContext';
+import { playTick, playCommit, playAlert } from './utils/terminalAudio';
 import type { Account, AuditReport, Transaction } from './types/ledger';
 import { ledgerClient, type EngineMode } from './api/LedgerClient';
 import type { StreamConnectionStatus } from './services/api';
 import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const { settings, isSettingsOpen, openSettings, closeSettings } = useSettings();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -111,6 +115,22 @@ export const App: React.FC = () => {
     };
   }, [refreshAll]);
 
+  // Automated background audit heartbeat
+  useEffect(() => {
+    if (!settings.autoAuditInterval || settings.autoAuditInterval <= 0) return;
+    const intervalMs = settings.autoAuditInterval * 1000;
+    const timer = setInterval(() => {
+      ledgerClient.verifyAuditChain()
+        .then(report => {
+          setLastAuditReport(report);
+          setLastAuditTime(new Date().toTimeString().slice(0, 8));
+        })
+        .catch(() => {});
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [settings.autoAuditInterval]);
+
   const handleVerifyAudit = async () => {
     setIsVerifyingAudit(true);
     try {
@@ -118,7 +138,13 @@ export const App: React.FC = () => {
       setLastAuditReport(report);
       setLastAuditTime(new Date().toTimeString().slice(0, 8));
       setIsAuditModalOpen(true);
+      if (report.valid) {
+        playCommit(settings.audioFeedback);
+      } else {
+        playAlert(settings.audioFeedback);
+      }
     } catch (err: any) {
+      playAlert(settings.audioFeedback);
       setToastMessage({
         title: 'Audit Verification Failed',
         detail: err.message || 'Unknown error',
@@ -137,6 +163,7 @@ export const App: React.FC = () => {
         amountPerTransferMinor: 1000, // $10.00
       });
 
+      playCommit(settings.audioFeedback);
       setToastMessage({
         title: `Stress Burst Completed: ${result.successfulTransfers} Transfers`,
         detail: `${result.effectiveThroughputTps.toFixed(1)} TPS in ${result.elapsedMilliseconds}ms (${result.totalAmountTransferredFormatted})`,
@@ -145,6 +172,7 @@ export const App: React.FC = () => {
 
       await refreshAll();
     } catch (err: any) {
+      playAlert(settings.audioFeedback);
       setToastMessage({
         title: 'Burst Simulation Failed',
         detail: err.message || 'Error executing burst',
@@ -247,7 +275,8 @@ export const App: React.FC = () => {
       const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
 
       if (e.key === 'Escape') {
-        if (isTransferModalOpen) setIsTransferModalOpen(false);
+        if (isSettingsOpen) closeSettings();
+        else if (isTransferModalOpen) setIsTransferModalOpen(false);
         else if (isCreateAccountOpen) setIsCreateAccountOpen(false);
         else if (isStatementModalOpen) setIsStatementModalOpen(false);
         else if (isAuditModalOpen) setIsAuditModalOpen(false);
@@ -257,8 +286,16 @@ export const App: React.FC = () => {
 
       if (isInput) return;
 
+      if (e.key === ',') {
+        e.preventDefault();
+        if (isSettingsOpen) closeSettings();
+        else openSettings();
+        return;
+      }
+
       if (e.key === 'ArrowDown' || e.key === 'j') {
         e.preventDefault();
+        playTick(settings.audioFeedback);
         setTransactions(currentTxs => {
           if (currentTxs.length === 0) return currentTxs;
           setSelectedTransaction(currentSel => {
@@ -270,6 +307,7 @@ export const App: React.FC = () => {
         });
       } else if (e.key === 'ArrowUp' || e.key === 'k') {
         e.preventDefault();
+        playTick(settings.audioFeedback);
         setTransactions(currentTxs => {
           if (currentTxs.length === 0) return currentTxs;
           setSelectedTransaction(currentSel => {
@@ -284,7 +322,7 @@ export const App: React.FC = () => {
         setIsTransferModalOpen(true);
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
-        if (!isBurstRunning) handleRunBurst(500);
+        if (!isBurstRunning) handleRunBurst(settings.defaultBurstCount);
       } else if (e.key === 'v' || e.key === 'V') {
         e.preventDefault();
         if (!isVerifyingAudit) handleVerifyAudit();
@@ -296,7 +334,20 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isTransferModalOpen, isCreateAccountOpen, isStatementModalOpen, isAuditModalOpen, selectedTransaction, isBurstRunning, isVerifyingAudit]);
+  }, [
+    isSettingsOpen,
+    isTransferModalOpen,
+    isCreateAccountOpen,
+    isStatementModalOpen,
+    isAuditModalOpen,
+    selectedTransaction,
+    isBurstRunning,
+    isVerifyingAudit,
+    settings.audioFeedback,
+    settings.defaultBurstCount,
+    openSettings,
+    closeSettings,
+  ]);
 
   const latestHash = transactions.length > 0 ? transactions[0].hash : '';
   const isJava = engineMode === 'JAVA_21_BACKEND';
@@ -329,8 +380,10 @@ export const App: React.FC = () => {
         }}
         onVerifyAudit={handleVerifyAudit}
         onRunBurst={handleRunBurst}
+        burstCount={settings.defaultBurstCount}
         onOpenTransferModal={() => setIsTransferModalOpen(true)}
         onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
+        onOpenSettings={openSettings}
         isBurstRunning={isBurstRunning}
         isVerifyingAudit={isVerifyingAudit}
         lastAuditReport={lastAuditReport}
@@ -394,8 +447,9 @@ export const App: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span><kbd>↑/↓</kbd> Navigate</span>
           <span><kbd>N</kbd> New Entry</span>
-          <span><kbd>B</kbd> 500-Tx Burst</span>
-          <span><kbd>V</kbd> Audit Chain</span>
+          <span><kbd>B</kbd> Burst</span>
+          <span><kbd>V</kbd> Audit</span>
+          <span><kbd>,</kbd> Settings</span>
           <span><kbd>/</kbd> Search</span>
           <span><kbd>Esc</kbd> Close</span>
         </div>
@@ -503,6 +557,17 @@ export const App: React.FC = () => {
             type: 'success',
           });
         }}
+      />
+
+      {/* System Preferences & Operational Configuration Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={closeSettings}
+        engineMode={engineMode}
+        connectionStatus={connectionStatus}
+        totalTransactions={transactions.length}
+        onRefreshData={refreshAll}
+        onTriggerToast={setToastMessage}
       />
     </div>
   );

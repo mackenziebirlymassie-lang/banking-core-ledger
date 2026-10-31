@@ -7,7 +7,8 @@ import {
   Cpu,
   RotateCcw,
   Building,
-  Check
+  Check,
+  Sliders
 } from 'lucide-react';
 import type { Account, AuditReport } from '../types/ledger';
 import { formatMinor } from '../utils/money';
@@ -26,6 +27,8 @@ interface HeaderTelemetryBarProps {
   onRunBurst: (count: number) => void;
   onOpenTransferModal: () => void;
   onOpenCreateAccount: () => void;
+  onOpenSettings?: () => void;
+  burstCount?: number;
   isBurstRunning: boolean;
   isVerifyingAudit: boolean;
   lastAuditReport: AuditReport | null;
@@ -80,11 +83,12 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
   onRunBurst,
   onOpenTransferModal,
   onOpenCreateAccount,
+  onOpenSettings,
+  burstCount = 500,
   isBurstRunning,
   isVerifyingAudit,
   lastAuditReport,
 }) => {
-  const burstCount = 500;
 
   // Calculate Global Double-Entry Invariant across all accounts
   let totalDebits = 0n;
@@ -280,11 +284,11 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           onClick={() => onRunBurst(burstCount)}
           disabled={isBurstRunning}
           style={{ height: '26px', fontSize: '11px' }}
-          title="Simulate 500 concurrent double-entry transfers (Hotkey: B)"
+          title={`Simulate ${burstCount} concurrent double-entry transfers (Hotkey: B)`}
         >
           <Zap size={11} strokeWidth={1.5} />
           <kbd style={{ color: '#c4b5fd', borderColor: '#3b2d68' }}>B</kbd>
-          <span>{isBurstRunning ? 'Bursting...' : '500-Tx Burst'}</span>
+          <span>{isBurstRunning ? 'Bursting...' : `${burstCount}-Tx Burst`}</span>
         </button>
 
         <button
@@ -307,6 +311,18 @@ export const HeaderTelemetryBar: React.FC<HeaderTelemetryBarProps> = ({
           <kbd style={{ color: '#ffffff', borderColor: '#0284c7', background: 'rgba(0,0,0,0.25)' }}>N</kbd>
           <span>New Entry</span>
         </button>
+        {onOpenSettings && (
+          <button
+            className="btn btn-secondary"
+            onClick={onOpenSettings}
+            style={{ height: '26px', fontSize: '11px' }}
+            title="Open System Configuration & Preferences (Hotkey: ,)"
+          >
+            <Sliders size={11} strokeWidth={1.5} style={{ color: 'var(--border-accent)' }} />
+            <kbd>,</kbd>
+            <span>Config</span>
+          </button>
+        )}
       </div>
     </header>
   );
